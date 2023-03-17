@@ -1,4 +1,4 @@
-use core::ffi::{c_void, c_long};
+use core::ffi::{c_void, c_long, c_ulong};
 use crate::uuid::Uuid;
 
 use super::{handle::*, result::SysResult};
@@ -25,12 +25,27 @@ pub const NOTIFY_INTERRUPT: u32 = 0x40;
 pub const NOTIFY_SIGNAL_MASK: u32 = 0x3f;
 
 
+pub const CHAR_READABLE: c_long = 0x01;
+pub const CHAR_WRITABLE: c_long = 0x02;
+pub const CHAR_SEEKABLE: c_long = 0x04;
+pub const CHAR_RANDOMACCESS: c_long = 0x08;
+
+pub const SEEK_FROM_START: u32 = 0;
+pub const SEEK_FROM_END: u32 =1;
+pub const SEEK_FROM_CURRENT: u32 = 2;
+
 #[allow(improper_ctypes)]
 extern "C"{
-    pub fn IORead(hdl: HandlePtr<IOHandle>, buf: *mut c_void,len: usize) -> SysResult;
-    pub fn IOWrite(hdl: HandlePtr<IOHandle>, buf: *const c_void, len: usize) -> SysResult;
+    pub fn IORead(hdl: HandlePtr<IOHandle>, buf: *mut c_void,len: c_ulong) -> SysResult;
+    pub fn IOWrite(hdl: HandlePtr<IOHandle>, buf: *const c_void, len: c_ulong) -> SysResult;
+    pub fn IOSeek(hdl: HandlePtr<IOHandle>, from: u32, offset: c_long) -> SysResult;
 
-    /// 
+    pub fn IOReadRA(hdl: HandlePtr<IOHandle>, buf: *mut c_void, len: c_ulong, file_base: c_ulong) -> SysResult;
+    pub fn IOWriteRA(hdl: HandlePtr<IOHandle>, buf: *const c_void, len: c_ulong, file_base: c_ulong) -> SysResult;
+
+    pub fn GetIOCharacteristics(hdl: HandlePtr<IOHandle>) -> SysResult;
+
+    
     pub fn SetIOBlockingMode(hdl: HandlePtr<IOHandle>, mode: u32) -> SysResult;
     pub fn SetIONotifyMode(hdl: HandlePtr<IOHandle>, notif_flags: u32) -> SysResult;
     pub fn SetIONotifyAddr(hdl: HandlePtr<IOHandle>, addr: *mut c_void) -> SysResult;
@@ -44,11 +59,10 @@ extern "C"{
     /// Restarts a blocking I/O Operation that was interupted or timed out.
     pub fn IORestart(hdl: HandlePtr<IOHandle>) -> SysResult;
 
-
-    pub fn OpenCharacterDevice(hdl: *mut HandlePtr<IOHandle>, devid: Uuid) -> SysResult;
-    pub fn OpenBlockDevice(hdl: *mut HandlePtr<IOHandle>, devid: Uuid) -> SysResult;
-    pub fn OpenLegacyCharacterDevice(hdl: *mut HandlePtr<IOHandle>, maj: u32, min: u32) -> SysResult;
+    pub fn OpenLegacyCharDevice(hdl: *mut HandlePtr<IOHandle>, maj: u32, min: u32) -> SysResult;
     pub fn OpenLegacyBlockDevice(hdl: *mut HandlePtr<IOHandle>, maj: u32, min: u32) -> SysResult;
 
     pub fn CreatePipe(write_hdl: *mut HandlePtr<IOHandle>, read_hdl: *mut HandlePtr<IOHandle>,mode: u32, buffer_size: c_long) -> SysResult;
+
+    pub fn CreateMemoryBuffer(hdl: *mut HandlePtr<IOHandle>, mode: u32, buf: *mut c_void, len: c_ulong, chars: u32) -> SysResult;
 }

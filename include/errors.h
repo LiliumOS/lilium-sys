@@ -8,3 +8,6 @@
 
 #define TIMEOUT -100
 #define INTERRUPTED -101
+
+#define UNSUPPORTED_OPERATION -200
+#define PENDING -203

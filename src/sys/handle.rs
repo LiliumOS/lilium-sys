@@ -1,4 +1,6 @@
 
+use core::ffi::c_ulong;
+
 use super::result::SysResult;
 
 pub struct Handle(());
@@ -66,8 +68,26 @@ impl core::fmt::Pointer for SharedHandlePtr{
 unsafe impl Send for SharedHandlePtr{}
 unsafe impl Sync for SharedHandlePtr{}
 
+pub const HANDLE_TYPE_PROC: c_ulong = 1;
+pub const HANDLE_TYPE_THREAD: c_ulong = 2;
+pub const HANDLE_TYPE_IO: c_ulong = 3;
+pub const HANDLE_SUBTYPE_IO_FILE: c_ulong = 0x10000003;
+pub const HANDLE_SUBTYPE_IO_DEV: c_ulong = 0x20000003;
+pub const HANDLE_SUBTYPE_IO_PIPE_READ: c_ulong = 0x30000003;
+pub const HANDLE_SUBTYPE_IO_PIPE_WRITE: c_ulong = 0x40000003;
+pub const HANDLE_SUBTYPE_IO_SOCKET: c_ulong = 0x50000003;
+pub const HANDLE_SUBTYPE_IO_SERVER: c_ulong = 0x60000003;
+pub const HANDLE_SUBTYPE_IO_MEMBUF: c_ulong = 0x70000003;
+pub const HANDLE_SUBTYPE_IO_IPCCON: c_ulong = 0x80000003;
+pub const HANDLE_SUBTYPE_IO_IPCSERVER: c_ulong = 0x90000003;
+pub const HANDLE_TYPE_DEBUG: c_ulong = 4;
+pub const HANDLE_TYPE_SECURITY: c_ulong = 5;
+
+
+#[allow(improper_ctypes)]
 extern "C"{
-    fn ShareHandle(shared_handle: *mut SharedHandlePtr,hdl: HandlePtr<Handle>) -> SysResult;
-    fn UnshareHandle(hdl: HandlePtr<Handle>) -> SysResult;
-    fn UpgradeSharedHandle(hdlout: HandlePtr<Handle>, shared_handle: SharedHandlePtr) -> SysResult;
+    pub fn ShareHandle(shared_handle: *mut SharedHandlePtr,hdl: HandlePtr<Handle>) -> SysResult;
+    pub fn UnshareHandle(hdl: HandlePtr<Handle>) -> SysResult;
+    pub fn UpgradeSharedHandle(hdlout: HandlePtr<Handle>, shared_handle: SharedHandlePtr) -> SysResult;
+    pub fn IdentHandle(hdl: HandlePtr<Handle>) -> SysResult;
 }

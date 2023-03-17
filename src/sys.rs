@@ -15,3 +15,4 @@ pub mod ipc;
 pub mod io;
 pub mod fs;
 pub mod socket;
+pub mod device;

@@ -5,6 +5,7 @@ extern crate alloc;
 
 
 pub mod sys;
+pub mod io;
 pub mod fs;
 pub mod result;
 pub mod kstr;
