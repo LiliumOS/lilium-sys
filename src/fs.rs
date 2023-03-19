@@ -1,8 +1,9 @@
 use core::{str::Split, ops::Deref, borrow::Borrow};
 
-use alloc::{string::{ToString, String}, borrow::Cow};
+use alloc::{string::{ToString, String},vec::Vec, borrow::Cow};
 
-use crate::sys::kstr::KStrCPtr;
+use crate::{sys::{kstr::{KStrCPtr, KStrPtr}, fs::ReadSymbolicLink, handle::HandlePtr}, result::Error};
+
 
 
 #[repr(transparent)]
@@ -156,4 +157,43 @@ impl Borrow<Path> for PathBuf{
     fn borrow(&self) -> &Path{
         self.as_path()
     }
+}
+
+pub fn read_symlink<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf>{
+    let path = path.as_ref();
+
+    let mut buf = Vec::<u8>::with_capacity(256);
+
+    let mut kstr = KStrPtr{
+        str_ptr: buf.as_mut_ptr() as *mut i8,
+        len: 256,
+    };
+
+    match crate::result::Error::from_code(unsafe{ReadSymbolicLink(HandlePtr::null(), KStrCPtr::from_str(path.as_ref()), &mut kstr)}){
+        Ok(()) => {
+            if kstr.len > 256{
+                buf.reserve(kstr.len as usize);
+                kstr.str_ptr = buf.as_mut_ptr() as *mut i8;
+                crate::result::Error::from_code(unsafe{ReadSymbolicLink(HandlePtr::null(), KStrCPtr::from_str(path.as_ref()), &mut kstr)})?;
+            }
+        }
+        Err(Error::InsufficientLength) => {
+            buf.reserve(kstr.len as usize);
+            kstr.str_ptr = buf.as_mut_ptr() as *mut i8;
+            crate::result::Error::from_code(unsafe{ReadSymbolicLink(HandlePtr::null(), KStrCPtr::from_str(path.as_ref()), &mut kstr)})?;
+        }
+        Err(e) => return Err(e)
+    }
+
+    // SAFETY:
+    // The kernel wrote exactly kstr.len bytes
+    unsafe{buf.set_len(kstr.len as usize);}
+
+    buf.shrink_to_fit();
+
+    // SAFETY:
+    // The Lillium kernel guarantees that a non-truncated strings returned from kernel space to userspace are valid UTF-8 
+    let st = unsafe{String::from_utf8_unchecked(buf)};
+    
+    Ok(PathBuf(st))
 }

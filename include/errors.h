@@ -4,7 +4,8 @@
 #define INVALID_MEMORY -3
 #define BUSY -4
 #define INVALID_OPERATION -5
-
+#define INVALID_STRING -6
+#define INSUFFICIENT_LENGTH -7
 
 #define TIMEOUT -100
 #define INTERRUPTED -101

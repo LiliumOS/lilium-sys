@@ -4,6 +4,9 @@ use crate::uuid::Uuid;
 
 use super::{handle::{Handle,HandlePtr}, kstr::{KStrCPtr, KStrPtr}, result::SysResult, ipc::IPCServerHandle, io::IOHandle, socket::SocketHandle};
 
+/// A handle to a file on the filesytem
+/// 
+/// File handles are opened by `OpenFile`
 #[repr(transparent)]
 pub struct FileHandle(Handle);
 
