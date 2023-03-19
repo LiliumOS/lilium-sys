@@ -1,23 +1,31 @@
-use core::ffi::{c_void, c_int};
+use core::ffi::{c_int, c_void};
 
-use super::{handle::*, result::SysResult, time::Duration, kstr::{KStrCPtr, KStrPtr}};
+use super::{
+    handle::*,
+    kstr::{KStrCPtr, KStrPtr},
+    result::SysResult,
+    time::Duration,
+};
 
 #[repr(transparent)]
 pub struct ThreadHandle(Handle);
 
 #[repr(C)]
-pub struct ThreadStartContext{
+pub struct ThreadStartContext {
     pub th_stack: *mut c_void,
     pub th_interal: *mut c_void,
     pub th_tlsbase: *mut c_void,
-    pub th_start: extern "C" fn(*mut c_void,HandlePtr<ThreadHandle>,*mut c_void),
+    pub th_start: extern "C" fn(*mut c_void, HandlePtr<ThreadHandle>, *mut c_void),
     #[doc(hidden)]
     pub __private: (),
 }
 
 #[allow(improper_ctypes)]
-extern "C"{
-    pub fn StartThread(tsc: *const ThreadStartContext, thout: *mut HandlePtr<ThreadHandle>) -> SysResult;
+extern "C" {
+    pub fn StartThread(
+        tsc: *const ThreadStartContext,
+        thout: *mut HandlePtr<ThreadHandle>,
+    ) -> SysResult;
     pub fn ParkThread() -> SysResult;
     pub fn UnparkThread(th: HandlePtr<ThreadHandle>) -> SysResult;
     pub fn YieldThread();
@@ -40,6 +48,6 @@ extern "C"{
     pub fn SendHandle(toth: HandlePtr<ThreadHandle>, sendhdl: HandlePtr<Handle>) -> SysResult;
     pub fn RecieveHandle(out: *mut HandlePtr<Handle>) -> SysResult;
 
-    pub fn SetThreadName(th: HandlePtr<ThreadHandle>, name: KStrCPtr)-> SysResult;
+    pub fn SetThreadName(th: HandlePtr<ThreadHandle>, name: KStrCPtr) -> SysResult;
     pub fn GetThreadName(th: HandlePtr<ThreadHandle>, name: KStrPtr) -> SysResult;
 }

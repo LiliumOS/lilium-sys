@@ -1,5 +1,4 @@
-
-pub type Result<T> = core::result::Result<T,Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 macro_rules! error_def{
     {$(#define $name:ident $val:pat)* } => {
@@ -8,7 +7,7 @@ macro_rules! error_def{
                 Unknown(core::ffi::c_long),
                 $([<$name:camel>]),*
             }
-    
+
             impl Error{
                 pub fn from_code(code: core::ffi::c_long) -> Result<()>{
                     match code{
@@ -19,10 +18,10 @@ macro_rules! error_def{
                 }
             }
         }
-        
+
     }
 }
-with_builtin_macros::with_builtin!{
+with_builtin_macros::with_builtin! {
     let $file = include_from_root!("include/errors.h") in {
         error_def!{$file}
     }

@@ -1,10 +1,16 @@
-use core::ffi::{c_long,c_void};
+use core::ffi::{c_long, c_void};
 
-use super::{result::SysResult, handle::{Handle,HandlePtr}, thread::ThreadHandle, kstr::{KStrCPtr,KStrPtr}, fs::FileHandle, io::IOHandle};
+use super::{
+    fs::FileHandle,
+    handle::{Handle, HandlePtr},
+    io::IOHandle,
+    kstr::{KStrCPtr, KStrPtr},
+    result::SysResult,
+    thread::ThreadHandle,
+};
 
 #[repr(transparent)]
 pub struct IPCConnectionHandle(Handle);
-
 
 #[repr(transparent)]
 pub struct IPCServerHandle(Handle);
@@ -28,16 +34,42 @@ pub const SIGNAL_ON_CONNECT_MASK: c_long = 0xF8;
 
 #[allow(improper_ctypes)]
 extern "C" {
-    pub fn OpenIPCServer(flags: c_long, common_name: KStrCPtr, handle_out: *mut HandlePtr<IPCServerHandle>) -> SysResult;
-    pub fn AwaitConnection(server: HandlePtr<IPCServerHandle>, client: *mut HandlePtr<IPCConnectionHandle>) -> SysResult;
-    pub fn PollConnect(server: HandlePtr<IPCServerHandle>, client: *mut HandlePtr<IPCConnectionHandle>) -> SysResult;
-    pub fn ConnectTo(th: HandlePtr<ThreadHandle>, common_name: KStrCPtr, handle_out: *mut HandlePtr<IPCConnectionHandle>) -> SysResult;
+    pub fn OpenIPCServer(
+        flags: c_long,
+        common_name: KStrCPtr,
+        handle_out: *mut HandlePtr<IPCServerHandle>,
+    ) -> SysResult;
+    pub fn AwaitConnection(
+        server: HandlePtr<IPCServerHandle>,
+        client: *mut HandlePtr<IPCConnectionHandle>,
+    ) -> SysResult;
+    pub fn PollConnect(
+        server: HandlePtr<IPCServerHandle>,
+        client: *mut HandlePtr<IPCConnectionHandle>,
+    ) -> SysResult;
+    pub fn ConnectTo(
+        th: HandlePtr<ThreadHandle>,
+        common_name: KStrCPtr,
+        handle_out: *mut HandlePtr<IPCConnectionHandle>,
+    ) -> SysResult;
     pub fn EnumerateOnThread(th: HandlePtr<ThreadHandle>, state: *mut *mut c_void) -> SysResult;
     pub fn EnumerateNext(th: HandlePtr<ThreadHandle>, state: *mut *mut c_void) -> SysResult;
-    pub fn EnumerateGet(th: HandlePtr<ThreadHandle>, state: *mut *mut c_void, handle_out: *mut HandlePtr<IPCConnectionHandle>, name_out: KStrPtr) -> SysResult;
-    
-    pub fn ConnectToNamed(handle_out: *mut HandlePtr<IPCConnectionHandle>, resolution_base: HandlePtr<FileHandle>, name: KStrCPtr) -> SysResult;
-    pub fn ConnectToFile(handle_out: *mut HandlePtr<IPCConnectionHandle>, file: HandlePtr<FileHandle>) -> SysResult;
+    pub fn EnumerateGet(
+        th: HandlePtr<ThreadHandle>,
+        state: *mut *mut c_void,
+        handle_out: *mut HandlePtr<IPCConnectionHandle>,
+        name_out: KStrPtr,
+    ) -> SysResult;
+
+    pub fn ConnectToNamed(
+        handle_out: *mut HandlePtr<IPCConnectionHandle>,
+        resolution_base: HandlePtr<FileHandle>,
+        name: KStrCPtr,
+    ) -> SysResult;
+    pub fn ConnectToFile(
+        handle_out: *mut HandlePtr<IPCConnectionHandle>,
+        file: HandlePtr<FileHandle>,
+    ) -> SysResult;
 
     pub fn IsIPCConnection(iohdl: HandlePtr<IOHandle>) -> SysResult;
 }
