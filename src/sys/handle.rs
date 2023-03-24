@@ -2,7 +2,7 @@ use core::ffi::c_ulong;
 
 use super::result::SysResult;
 
-pub struct Handle(u8);
+pub struct Handle(());
 
 #[repr(transparent)]
 pub struct HandlePtr<T>(*mut T);

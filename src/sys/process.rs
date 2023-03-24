@@ -115,6 +115,17 @@ pub struct ProcessInfo {
     pub prg_path: KStrPtr,
 }
 
+pub const MAP_ATTR_READ: u32 = 0x01;
+pub const MAP_ATTR_WRITE: u32 = 0x02;
+pub const MAP_ATTR_EXEC: u32 = 0x04;
+pub const MAP_ATTR_THREAD_PRIVATE: u32 = 0x08;
+pub const MAP_ATTR_PROC_PRIVATE: u32 = 0x10;
+
+pub const MAP_KIND_NORMAL: u32 = 0;
+pub const MAP_KIND_RESIDENT: u32 = 1;
+pub const MAP_KIND_SECURE: u32 = 2;
+pub const MAP_KIND_ENCRYPTED: u32 = 3;
+
 #[allow(improper_ctypes)]
 extern "C" {
     /// Obtains a handle to the current process environment
@@ -156,15 +167,30 @@ extern "C" {
         -> SysResult;
 
     /// Advances the enumeration list
-    pub fn EnumerateNext(
+    pub fn EnumerateNextProc(
         hdl: HandlePtr<EnumerateProcessHandle>,
         state: *mut *mut c_void,
     ) -> SysResult;
 
     /// Reads from the current pointer in the EnumerateProcessHandle
-    pub fn EnumerateRead(
+    pub fn EnumerateReadProc(
         hdl: HandlePtr<EnumerateProcessHandle>,
         state: *mut c_void,
         info: *mut ProcessInfo,
+    ) -> SysResult;
+
+    pub fn ExitProcess(code: i32) -> !;
+
+    pub fn CreateMapping(
+        base_addr_hint: *mut c_void,
+        page_count: c_long,
+        map_attrs: u32,
+        map_kind: u32,
+    ) -> SysResult;
+
+    pub fn ChangeMappingAttributes(
+        mapping_base_addr: *mut c_void,
+        page_count: c_long,
+        new_map_atrs: u32,
     ) -> SysResult;
 }

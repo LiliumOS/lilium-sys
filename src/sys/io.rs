@@ -35,7 +35,27 @@ pub const SEEK_FROM_CURRENT: u32 = 2;
 extern "C" {
     pub fn IORead(hdl: HandlePtr<IOHandle>, buf: *mut c_void, len: c_ulong) -> SysResult;
     pub fn IOWrite(hdl: HandlePtr<IOHandle>, buf: *const c_void, len: c_ulong) -> SysResult;
-    pub fn IOSeek(hdl: HandlePtr<IOHandle>, from: u32, offset: c_long) -> SysResult;
+    pub fn IOSeek(hdl: HandlePtr<IOHandle>, from: u32, offset: i64) -> SysResult;
+    pub fn IOSeekFar(hdl: HandlePtr<IOHandle>, from: u32, offset: i128) -> SysResult;
+
+    /// Copies a number of bytes from `src_hdl` to `dest_hdl`, without an intermediate return to userspace
+    /// This is intended to bemore efficient than performing individual `IORead` and `IOWrite` calls.
+    /// 
+    /// Blocking Behaviour:
+    /// * If either handle is `MODE_NONBLOCKING` and either operation would block, then `WOULDBLOCK` is returned
+    /// * If both `src_hdl` and `dest_hdl` are configured `MODE_ASYNC` and either operation would block, then PENDING is returned, and the behaviour follows standard async I/O rules
+    /// * Otherwise, the syscall blocks. 
+    pub fn IOCopy(src_hdl: HandlePtr<IOHandle>,dest_hdl: HandlePtr<IOHandle>, len: c_ulong) -> SysResult;
+    
+    /// Copies all available data from src_hdl to dest_hdl
+    /// This is the same as an `IOCopy` between the handles with an arbitrarily large length, except:
+    /// * If both src and dest are pipes, if dest has a larger or same-size buffer than src, then the operation is atomic
+    /// * If dest is a socket, and either src is a datagram socket or a pipe, then the next block that is available (up to the minimum of the src buffer size and the dest packet size)
+    ///    is written as a single unit (this is important if `dest` is a datagram socket)
+    /// * Likewise, if `dest` is a pipe, and src is a datagram socket, the next datagram recieved, up to the dest buffer size, is written as a single unit. 
+    ///    If the datagram exceeds the buffer size, it is split.
+    /// * If both are files, the size of the copied data may exceed the bounds of `unsigned long`. In this case, `EXCEEDS_LIMIT` "error" is returned (as if a length in excess of `long` was passed)
+    pub fn IOCopyFull(src_hdl: HandlePtr<IOHandle>, dest_hdl: HandlePtr<IOHandle>) -> SysResult;
 
     pub fn IOReadRA(
         hdl: HandlePtr<IOHandle>,
@@ -49,6 +69,7 @@ extern "C" {
         len: c_ulong,
         file_base: c_ulong,
     ) -> SysResult;
+
 
     pub fn GetIOCharacteristics(hdl: HandlePtr<IOHandle>) -> SysResult;
 
@@ -82,4 +103,6 @@ extern "C" {
         len: c_ulong,
         chars: u32,
     ) -> SysResult;
+
+    pub fn CloseMemoryBuffer(io: HandlePtr<IOHandle>) -> SysResult;
 }

@@ -130,6 +130,7 @@ pub struct DaclRow {
 
 #[allow(improper_ctypes)]
 extern "C" {
+    /// Opens a new
     pub fn OpenFile(hdl: *mut HandlePtr<FileHandle>, opts: *const FileOpenOptions) -> SysResult;
     pub fn CloseFile(hdl: HandlePtr<FileHandle>) -> SysResult;
     pub fn DirectoryNext(hdl: HandlePtr<FileHandle>, state: *mut *mut c_void) -> SysResult;
@@ -293,4 +294,26 @@ extern "C" {
     pub fn RemoveStream(file: HandlePtr<FileHandle>, stream_name: KStrCPtr) -> SysResult;
 
     pub fn IsFileHandle(iohdl: HandlePtr<IOHandle>) -> SysResult;
+
+    pub fn GetObjectType(file: HandlePtr<FileHandle>) -> SysResult;
+
+    /// Changes the access and (optionally) the operation mode of a file handle, without reopening the underlying object or stream.
+    /// This operation does not modify the existing handle, and instead places a new handle opened in the new access mode and operation mode in `newhdl`
+    ///
+    /// Path resolution is not performed again, but permission checks reoccurs if:
+    /// * The operation mode is changed from the old handle, or
+    /// * The new access mode has any modes not present in the access mode of the old handle.
+    ///
+    /// Note that permission checks will still occur even if a change occurs for which the permissions are subsumed by the old handle (for example, setting an op mode of `OP_NO_ACCESS`,
+    ///     or adding only `ACCESS_LOCK_SOFT`, or `ACCESS_CREATE` which is only effective on `OpenFile`).
+    ///
+    /// Setting `new_op` to `0` does not alter the operation mode.
+    ///
+    /// Changing the lock mode of the handle is not possible via `ChangeFileAccessMode`, except that a new lock may be established
+    pub fn ChangeFileAccessMode(
+        newhdl: *mut HandlePtr<FileHandle>,
+        oldhdl: HandlePtr<FileHandle>,
+        new_access: u32,
+        new_op: u32,
+    ) -> SysResult;
 }

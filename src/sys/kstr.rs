@@ -7,10 +7,17 @@ pub struct KStrCPtr {
 }
 
 impl KStrCPtr {
-    pub const fn from_str(st: &str) -> KStrCPtr {
+    pub const fn from_str(st: &str) -> Self {
         KStrCPtr {
             str_ptr: st.as_ptr() as *const c_char,
             len: st.len() as c_ulong,
+        }
+    }
+
+    pub const fn empty() -> Self {
+        KStrCPtr {
+            str_ptr: core::ptr::NonNull::dangling().as_ptr(),
+            len: 0,
         }
     }
 }

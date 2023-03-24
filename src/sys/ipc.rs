@@ -5,6 +5,7 @@ use super::{
     handle::{Handle, HandlePtr},
     io::IOHandle,
     kstr::{KStrCPtr, KStrPtr},
+    process::ProcessHandle,
     result::SysResult,
     thread::ThreadHandle,
 };
@@ -52,10 +53,11 @@ extern "C" {
         common_name: KStrCPtr,
         handle_out: *mut HandlePtr<IPCConnectionHandle>,
     ) -> SysResult;
-    pub fn EnumerateOnThread(th: HandlePtr<ThreadHandle>, state: *mut *mut c_void) -> SysResult;
-    pub fn EnumerateNext(th: HandlePtr<ThreadHandle>, state: *mut *mut c_void) -> SysResult;
-    pub fn EnumerateGet(
-        th: HandlePtr<ThreadHandle>,
+    pub fn EnumerateThreadIPC(th: HandlePtr<ThreadHandle>, state: *mut *mut c_void) -> SysResult;
+    pub fn EnumerateProcessIPC(ph: HandlePtr<ProcessHandle>, state: *mut *mut c_void) -> SysResult;
+    pub fn EnumerateNextIPC(th: HandlePtr<Handle>, state: *mut *mut c_void) -> SysResult;
+    pub fn EnumerateGetIPC(
+        th: HandlePtr<Handle>,
         state: *mut *mut c_void,
         handle_out: *mut HandlePtr<IPCConnectionHandle>,
         name_out: KStrPtr,

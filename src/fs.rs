@@ -1,4 +1,4 @@
-use core::{borrow::Borrow, ops::Deref, str::Split};
+use core::{borrow::Borrow, ops::Deref, str::Split, ffi::c_void};
 
 use alloc::{
     borrow::Cow,
@@ -9,7 +9,7 @@ use alloc::{
 use crate::{
     result::Error,
     sys::{
-        fs::ReadSymbolicLink,
+        fs::{self as sys, DirectoryInfo, DirectoryNext, DirectoryRead, FileHandle},
         handle::HandlePtr,
         kstr::{KStrCPtr, KStrPtr},
     },
@@ -24,6 +24,17 @@ pub enum Component<'a> {
     Root,
     CurDir,
     ParentDir,
+}
+
+impl<'a> Component<'a> {
+    pub const fn as_str(&self) -> &'a str {
+        match self {
+            Component::RealPath(p) => p.as_str(),
+            Component::Root => "/",
+            Component::CurDir => ".",
+            Component::ParentDir => "..",
+        }
+    }
 }
 
 pub struct Components<'a> {
@@ -176,7 +187,7 @@ pub fn read_link<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf> {
     };
 
     match crate::result::Error::from_code(unsafe {
-        ReadSymbolicLink(
+        sys::ReadSymbolicLink(
             HandlePtr::null(),
             KStrCPtr::from_str(path.as_ref()),
             &mut kstr,
@@ -187,7 +198,7 @@ pub fn read_link<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf> {
                 buf.reserve(kstr.len as usize);
                 kstr.str_ptr = buf.as_mut_ptr() as *mut i8;
                 crate::result::Error::from_code(unsafe {
-                    ReadSymbolicLink(
+                    sys::ReadSymbolicLink(
                         HandlePtr::null(),
                         KStrCPtr::from_str(path.as_ref()),
                         &mut kstr,
@@ -199,7 +210,7 @@ pub fn read_link<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf> {
             buf.reserve(kstr.len as usize);
             kstr.str_ptr = buf.as_mut_ptr() as *mut i8;
             crate::result::Error::from_code(unsafe {
-                ReadSymbolicLink(
+                sys::ReadSymbolicLink(
                     HandlePtr::null(),
                     KStrCPtr::from_str(path.as_ref()),
                     &mut kstr,
@@ -229,7 +240,7 @@ pub fn hard_link<P: AsRef<Path>, Q: AsRef<Path>>(
     link: Q,
 ) -> crate::result::Result<()> {
     crate::result::Error::from_code(unsafe {
-        crate::sys::fs::CreateHardLink(
+        sys::CreateHardLink(
             core::ptr::null_mut(),
             HandlePtr::null(),
             KStrCPtr::from_str(link.as_ref().as_str()),
@@ -237,4 +248,87 @@ pub fn hard_link<P: AsRef<Path>, Q: AsRef<Path>>(
             KStrCPtr::from_str(original.as_ref().as_str()),
         )
     })
+}
+
+pub fn weak_link<P: AsRef<Path>, Q: AsRef<Path>>(
+    original: P,
+    link: Q,
+) -> crate::result::Result<()> {
+    crate::result::Error::from_code(unsafe {
+        crate::sys::fs::CreateWeakLink(
+            core::ptr::null_mut(),
+            HandlePtr::null(),
+            KStrCPtr::from_str(link.as_ref().as_str()),
+            HandlePtr::null(),
+            KStrCPtr::from_str(original.as_ref().as_str()),
+        )
+    })
+}
+
+pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(
+    original: P,
+    link: Q,
+) -> crate::result::Result<()> {
+    crate::result::Error::from_code(unsafe {
+        crate::sys::fs::CreateSymbolicLink(
+            HandlePtr::null(),
+            KStrCPtr::from_str(link.as_ref().as_str()),
+            KStrCPtr::from_str(original.as_ref().as_str()),
+        )
+    })
+}
+
+pub fn create_dir_all<P: AsRef<Path>>(path: P) -> crate::result::Result<()> {
+    let path = path.as_ref();
+
+    let mut cur_base = HandlePtr::null();
+
+    for seg in path.components() {
+        loop {
+            match crate::result::Error::from_code(unsafe {
+                sys::OpenFile(
+                    &mut cur_base,
+                    &sys::FileOpenOptions {
+                        resolution_base: cur_base,
+                        path: KStrCPtr::from_str(seg.as_str()),
+                        stream_override: KStrCPtr::empty(),
+                        access_mode: sys::ACCESS_READ,
+                        op_mode: sys::OP_DIRECTORY_ACCESS,
+                        blocking_mode: sys::MODE_BLOCKING,
+                        create_acl: HandlePtr::null(),
+                    },
+                )
+            }) {
+                Ok(()) => break,
+                Err(crate::result::Error::DoesNotExist) => {
+                    match crate::result::Error::from_code(unsafe {
+                        sys::CreateDirectory(
+                            &mut cur_base,
+                            cur_base,
+                            KStrCPtr::from_str(seg.as_str()),
+                            HandlePtr::null(),
+                        )
+                    }) {
+                        Ok(()) => break,
+                        Err(crate::result::Error::AlreadyExists) => continue,
+                        Err(e) => return Err(e),
+                    }
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    }
+
+    Ok(())
+}
+
+
+pub struct DirIterator{
+    dirhdl: HandlePtr<FileHandle>,
+    base_path: PathBuf,
+    state: *mut c_void
+}
+
+pub struct DirEntry{
+
 }
