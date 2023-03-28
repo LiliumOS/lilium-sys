@@ -1,3 +1,42 @@
+//! # Filesystem System Call Interfaces
+//!  Interfaces for accessing the filesystem in Lilium
+//!
+//! ## Path Resolution
+//!
+//! The Lilium kernel implements two modes of path resolution: Logical and Physical.
+//! The difference in behaviour is described in this section.
+//!
+//! By default, path names are resolved logically, exceptions are given.
+//!
+//! During Logical resolution, first each `.` component is removed, and each `..` component is removed with the last non-`.`/non-`..` path component, this results in navigating to the *logical* parent directory.
+//! If any `..` components remain, they are resolved physical against the resolution base. If the component to be removed is `/`, then the `..` component is removed and the `/` component is kept.
+//! After `..` components and `.` components are removed, the components are iterated through. If any symbolic links are encountered, they are resolved logically against the containing directory.
+//!
+//! Then finally, once symbolic links are traversed, the resulting path is then subject to physical resolution.
+//!
+//!
+//! During physical resolution, path components, including `..` and `.` components are enumerated once at a time, and resolved against the filesystem object found by the previous directory.
+//! Symbolic links are followed eagerly in physical resolution, and the symbol link content is resolved physically. A `..` that steps out of a symbolic link will reach the parent directory of the target,
+//!  rather than the one of the symbolic link.
+//!
+//! The Limit to logical path resolution is 1024 segments separated by slashes (including a leading root segment `/`), including after reading symbolic links.
+//!  If a path exceeds this length, either an error will be returned or the path will be resovled physical, either entirely or starting with the 1025th component. Which occurs is not specified.
+//!
+//! When resolving paths, the `DirectoryContent` stream is used by default (except for objects with type "SymbolicLink").
+//! If path resolution of an object should be performed using an alternative stream, then after the name of the object, the name of the stream should be included in the component,
+//! separated from the object name by `$$`.
+//! If more than one stream with the name appears on the object, the first is used. To refer to any stream of that name other than the first, the number of the stream to be used should be referred to,
+//!  separated from the stream name by `$`.
+//! If the stream name would contain a `/`, then it should be escaped by a `\`.
+//!
+//! See the [Streams](#streams) section for more information on alternative streams.
+//!
+//! Most functions in the `fs` interface take a resolution base handle. If set to null, this uses the current directory. Otherwise, it must be a handle opened in `OP_DIRECTORY_ACCESS` mode, or an error occurs.
+//! In both cases, the physical path is resolved physically against this, if it is relative (Does not start with a `/`)
+//!
+//!
+//!
+
 use core::ffi::{c_long, c_void};
 
 use crate::uuid::Uuid;
@@ -85,7 +124,8 @@ pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 pub struct FileOpenOptions {
     /// If non-null, set to a `FileHandle` opened in `OP_DIRECTORY_ACCESS` mode to use in path resolution for relative paths instead of the current directory.
     pub resolution_base: HandlePtr<FileHandle>,
-    /// The file path to open
+    /// The file path to open.
+    ///
     pub path: KStrCPtr,
     /// If set to a non-empty string, designates the explicit stream of the object to open.
     ///
@@ -316,4 +356,8 @@ extern "C" {
         new_access: u32,
         new_op: u32,
     ) -> SysResult;
+
+    pub fn SetCurrentDirectory(dir: HandlePtr<FileHandle>) -> SysResult;
+
+    pub fn SetResolutionRoot(res_base: HandlePtr<FileHandle>) -> SysResult;
 }

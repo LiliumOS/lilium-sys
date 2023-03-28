@@ -16,3 +16,4 @@
 #define PENDING -203
 #define DOES_NOT_EXIST -204
 #define ALREADY_EXISTS -205
+#define UNKNOWN_DEVICE -206

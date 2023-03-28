@@ -1,6 +1,6 @@
 use core::ffi::{c_long, c_ulong, c_void};
 
-use crate::uuid::Uuid;
+use crate::{io::IOHandle, uuid::Uuid};
 
 use super::{
     fs::FileHandle,
@@ -126,6 +126,12 @@ pub const MAP_KIND_RESIDENT: u32 = 1;
 pub const MAP_KIND_SECURE: u32 = 2;
 pub const MAP_KIND_ENCRYPTED: u32 = 3;
 
+#[repr(C)]
+pub struct TerminationSignalInfo {
+    pub signo: u32,
+    pub is_thread_signal: bool,
+}
+
 #[allow(improper_ctypes)]
 extern "C" {
     /// Obtains a handle to the current process environment
@@ -143,13 +149,25 @@ extern "C" {
         val: KStrCPtr,
     ) -> SysResult;
 
-    /// Creates an empoty environment mpa
+    /// Creates an empty environment mpa
     pub fn CreateEnvironment(hdl: *mut HandlePtr<EnvironmentMapHandle>) -> SysResult;
 
     /// Copies the given environment mpa
     pub fn CopyEnvironment(
         hdl: *mut HandlePtr<EnvironmentMapHandle>,
         map: HandlePtr<EnvironmentMapHandle>,
+    ) -> SysResult;
+
+    /// Enumerates over the list of key-value pairs in the environment map
+    pub fn EnvironmentNextPair(
+        hdl: HandlePtr<EnvironmentMapHandle>,
+        state: *mut *mut c_void,
+    ) -> SysResult;
+
+    /// Reads the current key-value pair in the enumerate
+    pub fn EnvironmentReadPair(
+        hdl: HandlePtr<EnvironmentMapHandle>,
+        state: *mut c_void,
     ) -> SysResult;
 
     /// Spawns a new process and places a handle to it in `hdl`.
@@ -179,13 +197,34 @@ extern "C" {
         info: *mut ProcessInfo,
     ) -> SysResult;
 
-    pub fn ExitProcess(code: i32) -> !;
+    /// Waits for the given process. The current thread is blocked until it completes.
+    ///
+    /// A return of a value described below syncronizes-with the termination of all threads running in that process
+    ///
+    /// If the process is terminated by a call to `ExitProcess` or by `ExitThread` called from the main thread,
+    ///  returns that value exactly.
+    ///
+    /// If the process was terminated by a signal, returns SIGNALED and sets `*termsiginfo` to information about the signal that caused termination.
+    ///
+    /// If the process was terminated because the main thread was terminated by a call to `DestroyThread`, returns `KILLED`.
+    ///
+    ///
+    pub fn JoinProcess(
+        hdl: HandlePtr<ProcessHandle>,
+        termsiginfo: *mut TerminationSignalInfo,
+    ) -> SysResult;
+
+    /// Terminates all threads as though by `DestroyThread` syscalls, and exits from the process with the given code
+    ///
+    /// The termination of other threads occurs at such a time as the thread might recieve a signal from `SignalThread`.
+    pub fn ExitProcess(code: u32) -> !;
 
     pub fn CreateMapping(
         base_addr_hint: *mut c_void,
         page_count: c_long,
         map_attrs: u32,
         map_kind: u32,
+        backing: HandlePtr<IOHandle>,
     ) -> SysResult;
 
     pub fn ChangeMappingAttributes(
@@ -193,4 +232,6 @@ extern "C" {
         page_count: c_long,
         new_map_atrs: u32,
     ) -> SysResult;
+
+    pub fn RemoveMapping(mapping_base_addr: *mut c_void, page_count: c_long) -> SysResult;
 }
