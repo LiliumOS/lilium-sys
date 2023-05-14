@@ -5,6 +5,7 @@ use crate::{io::IOHandle, uuid::Uuid};
 use super::{
     fs::FileHandle,
     handle::{Handle, HandlePtr},
+    isolation::NamespaceHandle,
     kstr::{KStrCPtr, KStrPtr},
     permission::SecurityContext,
     result::SysResult,
@@ -72,7 +73,7 @@ pub struct ProcessStartContext {
     /// A corresponding array of such handles is given by the AT_PHANTOM_INIT_HANDLES array in the spawned process
     ///
     /// By convention, this array starts with the standard input, standard output, and standard error streams.
-    pub init_handles: *mut HandlePtr<Handle>,
+    pub init_handles: *const HandlePtr<Handle>,
 
     /// A program label, used for debugging or identifying the program via `EnumerateProcesses`
     pub label: KStrCPtr,
@@ -81,6 +82,8 @@ pub struct ProcessStartContext {
     pub proc_args_len: c_ulong,
     /// Process arguments, including argv[0]
     pub proc_args: *const KStrCPtr,
+    /// The namespace to place the process in
+    pub init_namespace: HandlePtr<NamespaceHandle>,
 }
 
 #[repr(transparent)]

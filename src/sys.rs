@@ -6,6 +6,7 @@ pub mod fs;
 pub mod handle;
 pub mod io;
 pub mod ipc;
+pub mod isolation;
 pub mod kstr;
 pub mod permission;
 pub mod process;

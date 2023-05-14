@@ -13,8 +13,8 @@ use super::{
 #[repr(C)]
 pub struct BlockDeviceConfiguration {
     pub label: KStrCPtr,
-    pub optimistic_io_size: u64,
     pub acl: HandlePtr<FileHandle>,
+    pub optimistic_io_size: u64,
     pub base: c_ulong,
     pub extent: c_long,
 }
@@ -22,27 +22,51 @@ pub struct BlockDeviceConfiguration {
 #[repr(C)]
 pub struct CharDeviceConfiguration {
     pub label: KStrCPtr,
-    pub optimistic_io_size: u64,
     pub acl: HandlePtr<FileHandle>,
+    pub optimistic_io_size: u64,
 }
 
 #[repr(transparent)]
 pub struct DeviceHandle(Handle);
 
 /// Treats every object in the mounted filesystem as having the `default_acl`
+///
+/// This is default if the filesystem does not support ACLs or Legacy Permisions (such as FAT32)
 pub const MOUNT_REPLACE_ACLS: u32 = 0x01;
 /// Enables the use of InstallSecurityContext and legacy SUID/SGID bits on mounted objects.
 /// Requires the MountPrivilagedExec kernel permission
 pub const MOUNT_ALLOW_PRIVILAGED: u32 = 0x02;
+/// Treats every object in the mounted filesystem as having `default_acl` if the filesystem only supports legacy permissions
+///
+/// Note that some filesystems may support a form of ACL, but be considered to only support legacy permissions (for example, ext4's posix acl support).
+/// This flag will override the ACLs on objects on which such ACLs are present
+pub const MOUNT_REPLACE_LEGACY_PERMISSIONS: u32 = 0x04;
 
 #[repr(C)]
 pub struct MountOptions {
+    /// The default ACL to use if the filesystem does not support permissions or where replacement is required
     pub default_acl: HandlePtr<FileHandle>,
+    /// flags for the mount operation
     pub flags: u32,
+    /// If the filesystem uses legacy permissions (or supports only posix acls, rather than enhanced dacls), then use this principal map given to map to Lilium principals.
+    /// The IOHandle must have `CHAR_READ` and `CHAR_SEEK`. If it does not have `CHAR_RANDOMACCESS` then the behaviour is undefined if the thread calls `IOSeek`, or performs an I/O operation on the handle.
+    pub legacy_principal_map: HandlePtr<IOHandle>,
 }
 
 #[repr(C)]
-pub struct VirtualFSDescriptor {}
+pub struct VirtualFSDescriptor {
+    pub label: KStrCPtr,
+    pub acl: HandlePtr<FileHandle>,
+    pub buffer_page: *mut c_void,
+}
+
+#[repr(C)]
+pub struct RandomSourceDescriptor {
+    pub label: KStrCPtr,
+    pub acl: HandlePtr<FileHandle>,
+    pub buffer_page: *mut c_void,
+    pub gen_random_bytes_impl: unsafe extern "C" fn(*mut c_void, c_ulong) -> SysResult,
+}
 
 #[allow(improper_ctypes)]
 extern "C" {

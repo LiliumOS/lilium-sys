@@ -40,15 +40,15 @@ extern "C" {
         common_name: KStrCPtr,
         handle_out: *mut HandlePtr<IPCServerHandle>,
     ) -> SysResult;
-    pub fn AwaitConnection(
+    pub fn AwaitIPCConnection(
         server: HandlePtr<IPCServerHandle>,
         client: *mut HandlePtr<IPCConnectionHandle>,
     ) -> SysResult;
-    pub fn PollConnect(
+    pub fn PollIPCConnect(
         server: HandlePtr<IPCServerHandle>,
         client: *mut HandlePtr<IPCConnectionHandle>,
     ) -> SysResult;
-    pub fn ConnectTo(
+    pub fn IPCConnectTo(
         th: HandlePtr<ThreadHandle>,
         common_name: KStrCPtr,
         handle_out: *mut HandlePtr<IPCConnectionHandle>,
@@ -74,4 +74,13 @@ extern "C" {
     ) -> SysResult;
 
     pub fn IsIPCConnection(iohdl: HandlePtr<IOHandle>) -> SysResult;
+
+    pub fn IPCSendHandle(
+        ipccon: HandlePtr<IPCConnectionHandle>,
+        hdl: HandlePtr<Handle>,
+    ) -> SysResult;
+    pub fn IPCRecieveHandle(
+        ipccon: HandlePtr<IPCConnectionHandle>,
+        hdl_out: *mut HandlePtr<Handle>,
+    ) -> SysResult;
 }

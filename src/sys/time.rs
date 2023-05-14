@@ -1,3 +1,5 @@
+use core::ffi::c_ulong;
+
 use crate::uuid::{parse_uuid, Uuid};
 
 use super::result::SysResult;
@@ -6,6 +8,12 @@ use super::result::SysResult;
 pub struct Duration {
     pub seconds: i64,
     pub nanos_of_second: u32,
+}
+
+#[repr(C)]
+pub struct ClockOffset {
+    pub clockid: Uuid,
+    pub offset: Duration,
 }
 
 /// A Clock that tracks the realtime offset since the unix Epoch, 1970-01-01T00:00:00.00000000Z
@@ -39,6 +47,17 @@ extern "C" {
     /// Returns UNKNOWN_DEVICE if `clock` is not a valid Clock device id. Returns PERMISSION if read access to the clock device is denied,
     ///   or the current thread does not have the READ_CLOCK_OFFSET kernel permission.
     pub fn GetClockOffset(dur: *mut Duration, clock: Uuid) -> SysResult;
+
+    ///
+    /// Reads the current offset from the epoch, as a Duration, of multiple specified Clocks.
+    /// This may be used to synchronize two clocks at a point
+    ///
+    /// ## Errors
+    /// Returns UNKNOWN_DEVICE if any `clock_id` specified is not a valid Clock Device id. Returns PERMISSION if read access to the clock device is denied,
+    ///  or the current thread dos not have the READ_CLOCK_OFFSET kernel permision.
+    ///
+    /// In any case other than the last (READ_CLOCK_OFFSET permission is denied), the value of any duration in the array is undefined
+    pub fn GetClockOffsets(output_array: *mut ClockOffset, len: c_ulong) -> SysResult;
 
     ///
     /// Modifies the specified clock to start from the given offset. This is not effective on all clock values

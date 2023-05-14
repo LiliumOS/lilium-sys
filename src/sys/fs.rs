@@ -122,11 +122,6 @@ pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 
 #[repr(C)]
 pub struct FileOpenOptions {
-    /// If non-null, set to a `FileHandle` opened in `OP_DIRECTORY_ACCESS` mode to use in path resolution for relative paths instead of the current directory.
-    pub resolution_base: HandlePtr<FileHandle>,
-    /// The file path to open.
-    ///
-    pub path: KStrCPtr,
     /// If set to a non-empty string, designates the explicit stream of the object to open.
     ///
     /// Only certain filesystems support multiple streams (such as NTFS or PhantomFS). Other filesystems may only support a limited set of standard streams,
@@ -171,7 +166,12 @@ pub struct DaclRow {
 #[allow(improper_ctypes)]
 extern "C" {
     /// Opens a new
-    pub fn OpenFile(hdl: *mut HandlePtr<FileHandle>, opts: *const FileOpenOptions) -> SysResult;
+    pub fn OpenFile(
+        hdl: *mut HandlePtr<FileHandle>,
+        resolution_base: HandlePtr<FileHandle>,
+        path: KStrCPtr,
+        opts: *const FileOpenOptions,
+    ) -> SysResult;
     pub fn CloseFile(hdl: HandlePtr<FileHandle>) -> SysResult;
     pub fn DirectoryNext(hdl: HandlePtr<FileHandle>, state: *mut *mut c_void) -> SysResult;
     pub fn DirectoryRead(
@@ -217,6 +217,12 @@ extern "C" {
         dir_handle: *mut HandlePtr<FileHandle>,
         resolution_base: HandlePtr<FileHandle>,
         path: KStrCPtr,
+        acl: HandlePtr<FileHandle>,
+    ) -> SysResult;
+
+    pub fn CreatePrivateDirectory(
+        dir_handle: *mut HandlePtr<FileHandle>,
+        resolutionbase: HandlePtr<FileHandle>,
         acl: HandlePtr<FileHandle>,
     ) -> SysResult;
 

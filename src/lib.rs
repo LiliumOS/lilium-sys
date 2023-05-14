@@ -7,6 +7,7 @@ pub mod fs;
 pub mod handle;
 pub mod io;
 pub mod kstr;
+pub mod process;
 pub mod random;
 pub mod result;
 pub mod security;

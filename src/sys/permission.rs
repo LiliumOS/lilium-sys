@@ -1,5 +1,7 @@
 use core::ffi::c_long;
 
+use crate::uuid::Uuid;
+
 use super::{
     handle::{Handle, HandlePtr},
     kstr::KStrCPtr,
@@ -10,6 +12,20 @@ use super::{
 
 #[repr(transparent)]
 pub struct SecurityContext(Handle);
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct ThreadOwnerProcess {
+    pub handle: HandlePtr<ProcessHandle>,
+    #[doc(hidden)]
+    pub __padding: [u32; (16 - core::mem::size_of::<HandlePtr<ProcessHandle>>()) >> 2],
+}
+
+#[repr(C)]
+pub union ThreadOwner {
+    pub process: ThreadOwnerProcess,
+    pub owning_principal: Uuid,
+}
 
 #[allow(improper_ctypes)]
 extern "C" {
@@ -76,4 +92,13 @@ extern "C" {
         ph: HandlePtr<ProcessHandle>,
         perm: KStrCPtr,
     ) -> SysResult;
+
+    pub fn SetKernelResourceLimit(
+        ctx: HandlePtr<SecurityContext>,
+        limit_name: KStrCPtr,
+        value: u64,
+    ) -> SysResult;
+
+
+    pub fn EncodeSecurityContext(ctx: HandlePtr<SecurityContext>, buffer: *mut u8, len: *mut usize) -> SysResult;
 }

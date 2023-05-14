@@ -1,4 +1,4 @@
-use core::{borrow::Borrow, ops::Deref, str::Split, ffi::c_void};
+use core::{borrow::Borrow, ffi::c_void, ops::Deref, str::Split};
 
 use alloc::{
     borrow::Cow,
@@ -265,10 +265,7 @@ pub fn weak_link<P: AsRef<Path>, Q: AsRef<Path>>(
     })
 }
 
-pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(
-    original: P,
-    link: Q,
-) -> crate::result::Result<()> {
+pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> crate::result::Result<()> {
     crate::result::Error::from_code(unsafe {
         crate::sys::fs::CreateSymbolicLink(
             HandlePtr::null(),
@@ -288,9 +285,9 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> crate::result::Result<()> {
             match crate::result::Error::from_code(unsafe {
                 sys::OpenFile(
                     &mut cur_base,
+                    cur_base,
+                    KStrCPtr::from_str(seg.as_str()),
                     &sys::FileOpenOptions {
-                        resolution_base: cur_base,
-                        path: KStrCPtr::from_str(seg.as_str()),
                         stream_override: KStrCPtr::empty(),
                         access_mode: sys::ACCESS_READ,
                         op_mode: sys::OP_DIRECTORY_ACCESS,
@@ -322,13 +319,10 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> crate::result::Result<()> {
     Ok(())
 }
 
-
-pub struct DirIterator{
+pub struct DirIterator {
     dirhdl: HandlePtr<FileHandle>,
     base_path: PathBuf,
-    state: *mut c_void
+    state: *mut c_void,
 }
 
-pub struct DirEntry{
-
-}
+pub struct DirEntry {}
