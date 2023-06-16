@@ -29,6 +29,9 @@ pub const FLAG_HIDE_PROCESS: c_long = 0x10;
 /// It is an error to apply this to a privilaged process (one that has an InstallSecurityContext stream or legacy unix SUID/SGID), unless the current thread has the NoInterpPrivilaged kernel permission
 pub const FLAG_NO_INTERP: c_long = 0x20;
 
+/// Loads the given program into the current process
+pub const FLAG_REPLACE_IMAGE: c_long = 0x40;
+
 #[repr(C)]
 pub struct ProcessStartContext {
     /// The base directory or `FileHandle` to open to spawn the process.
@@ -216,6 +219,9 @@ extern "C" {
         hdl: HandlePtr<ProcessHandle>,
         termsiginfo: *mut TerminationSignalInfo,
     ) -> SysResult;
+
+    /// Detaches the given process from the handle
+    pub fn DetachProcess(hdl: HandlePtr<ProcessHandle>) -> SysResult;
 
     /// Terminates all threads as though by `DestroyThread` syscalls, and exits from the process with the given code
     ///

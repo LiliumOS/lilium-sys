@@ -165,13 +165,23 @@ pub struct DaclRow {
 
 #[allow(improper_ctypes)]
 extern "C" {
-    /// Opens a new
+    /// Opens a new file handle with the given path
     pub fn OpenFile(
         hdl: *mut HandlePtr<FileHandle>,
         resolution_base: HandlePtr<FileHandle>,
         path: KStrCPtr,
         opts: *const FileOpenOptions,
     ) -> SysResult;
+
+    /// Reopens the given file, allowing you to change access modes and operation modes. The handle is modified in-place - this affects any `SharedHandle` created from it
+    /// If an error occurs, the hdl continues to refer to the original object or stream in the previous operating mode.
+    ///
+    /// This operation does not change the referent of the handle, in particular:
+    /// * If hdl was open with a stream override (IE. it does not refer to the whole object), then after this call, it will continue to refer to that stream - if `stream_override` is present in `new_opts`, PERMISSION is returned.
+    /// * If hdl referred to a symlink, then it will continue to refer to that symlink, whether or not`ACCESS_LINK_STREAM_DIRECT` is present in `new_opts`
+    /// * paths are not resolved when reopening the file
+    pub fn ReopenFile(hdl: HandlePtr<FileHandle>, new_opts: *const FileOpenOptions) -> SysResult;
+
     pub fn CloseFile(hdl: HandlePtr<FileHandle>) -> SysResult;
     pub fn DirectoryNext(hdl: HandlePtr<FileHandle>, state: *mut *mut c_void) -> SysResult;
     pub fn DirectoryRead(

@@ -1,4 +1,4 @@
-use core::ffi::{c_int, c_void};
+use core::ffi::{c_int, c_long, c_ulong, c_void};
 
 use super::{
     handle::*,
@@ -30,8 +30,8 @@ extern "C" {
     pub fn UnparkThread(th: HandlePtr<ThreadHandle>) -> SysResult;
     pub fn YieldThread();
     pub fn AwaitAddress(addr: *mut c_void) -> SysResult;
-    pub fn SignalOne(addr: *mut c_void) -> SysResult;
-    pub fn SignalAll(addr: *mut c_void) -> SysResult;
+    pub fn NotifyOne(addr: *mut c_void) -> SysResult;
+    pub fn NotifyAll(addr: *mut c_void) -> SysResult;
     pub fn SetBlockingTimeout(dur: *const Duration);
     pub fn SleepThread(dur: *const Duration) -> SysResult;
     pub fn PauseThread() -> SysResult;
@@ -50,4 +50,8 @@ extern "C" {
 
     pub fn SetThreadName(th: HandlePtr<ThreadHandle>, name: KStrCPtr) -> SysResult;
     pub fn GetThreadName(th: HandlePtr<ThreadHandle>, name: KStrPtr) -> SysResult;
+
+    pub fn get_tls_block_size() -> c_ulong;
+    /// Returns the offset from the beginning of the TLS base address for dyanmically allocated thread locals (via tss_t or pthread_key_t)
+    pub fn get_tls_slide_offset() -> c_long;
 }

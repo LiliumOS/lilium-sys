@@ -27,3 +27,19 @@ pub struct KStrPtr {
     pub str_ptr: *mut c_char,
     pub len: c_ulong,
 }
+
+impl KStrPtr {
+    pub const fn empty() -> Self {
+        KStrPtr {
+            str_ptr: core::ptr::NonNull::dangling().as_ptr(),
+            len: 0,
+        }
+    }
+
+    pub const fn as_const(&self) -> KStrCPtr {
+        KStrCPtr {
+            str_ptr: self.str_ptr,
+            len: self.len,
+        }
+    }
+}

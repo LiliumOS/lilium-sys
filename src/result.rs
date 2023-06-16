@@ -3,13 +3,14 @@ pub type Result<T> = core::result::Result<T, Error>;
 macro_rules! error_def{
     {$(#define $name:ident $val:pat)* } => {
         paste::paste!{
+            #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
             pub enum Error{
                 Unknown(core::ffi::c_long),
                 $([<$name:camel>]),*
             }
 
             impl Error{
-                pub fn from_code(code: core::ffi::c_long) -> Result<()>{
+                pub const fn from_code(code: core::ffi::c_long) -> Result<()>{
                     match code{
                         0..=<core::ffi::c_long>::MAX => Ok(()),
                         $($val => Err(Self::[<$name:camel>]),)*

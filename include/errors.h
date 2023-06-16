@@ -11,9 +11,12 @@
 
 #define TIMEOUT -100
 #define INTERRUPTED -101
+#define KILLED -102
 
 #define UNSUPPORTED_OPERATION -200
 #define PENDING -203
 #define DOES_NOT_EXIST -204
 #define ALREADY_EXISTS -205
 #define UNKNOWN_DEVICE -206
+
+#define SIGNALED -300

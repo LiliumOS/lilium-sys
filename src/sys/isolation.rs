@@ -4,7 +4,9 @@ use crate::uuid::Uuid;
 
 use super::{
     device::DeviceHandle,
+    fs::FileHandle,
     handle::{Handle, HandlePtr},
+    kstr::KStrCPtr,
     result::SysResult,
 };
 
@@ -39,7 +41,19 @@ extern "C" {
         expose_devices_len: c_ulong,
     ) -> SysResult;
 
+    pub fn IsolateMounts(
+        handle: HandlePtr<NamespaceHandle>,
+        allowed_mounts_array: *const KStrCPtr,
+        allowed_mounts_len: usize,
+    ) -> SysResult;
+
+    pub fn IsolateFileSystem(
+        handle: HandlePtr<NamespaceHandle>,
+        base: HandlePtr<FileHandle>,
+    ) -> SysResult;
+
     pub fn IsolateProcesses(ns: HandlePtr<NamespaceHandle>, flags: u32) -> SysResult;
 
     pub fn InstallNamespace(handle: HandlePtr<NamespaceHandle>) -> SysResult;
+
 }

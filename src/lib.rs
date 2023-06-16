@@ -1,4 +1,5 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![feature(thread_local, never_type)]
 //! High and Low-level bindings to the PhantomOS kernel interfaces
 
 extern crate alloc;

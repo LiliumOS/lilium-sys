@@ -68,6 +68,12 @@ pub struct RandomSourceDescriptor {
     pub gen_random_bytes_impl: unsafe extern "C" fn(*mut c_void, c_ulong) -> SysResult,
 }
 
+#[repr(C)]
+pub struct ClockDescriptor {
+    pub label: KStrCPtr,
+    pub acl: HandlePtr<FileHandle>,
+}
+
 #[allow(improper_ctypes)]
 extern "C" {
     pub fn CreateBlockDevice(
@@ -94,6 +100,13 @@ extern "C" {
     pub fn GetFileDeviceLabel(hdl: HandlePtr<FileHandle>, label: *mut KStrPtr) -> SysResult;
     pub fn GetFileOptimisticIOSize(hdl: HandlePtr<FileHandle>, io_size: *mut u64) -> SysResult;
     pub fn GetFileDeviceId(hdl: HandlePtr<FileHandle>, id: *mut Uuid) -> SysResult;
+    pub fn OpenDeviceFromFile(
+        devhdl: *mut HandlePtr<DeviceHandle>,
+        file: HandlePtr<FileHandle>,
+    ) -> SysResult;
+
+    /// Issues a Command to a device. The supported commands are device specific, and the parameters for each command is command specific
+    pub fn IssueDeviceCommand(hdl: HandlePtr<DeviceHandle>, cmd: *const Uuid, ...) -> SysResult;
 
     pub fn MountFilesystem(
         resolution_base: HandlePtr<FileHandle>,
@@ -106,4 +119,6 @@ extern "C" {
         devid: *mut Uuid,
         vfsdesc: *const VirtualFSDescriptor,
     ) -> SysResult;
+
+    pub fn CreateRandomDevice(devid: *mut Uuid, rdevdesc: RandomSourceDescriptor) -> SysResult;
 }

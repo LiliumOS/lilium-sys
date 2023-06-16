@@ -52,6 +52,7 @@ extern "C" {
     /// Reads the current offset from the epoch, as a Duration, of multiple specified Clocks.
     /// This may be used to synchronize two clocks at a point
     ///
+    ///
     /// ## Errors
     /// Returns UNKNOWN_DEVICE if any `clock_id` specified is not a valid Clock Device id. Returns PERMISSION if read access to the clock device is denied,
     ///  or the current thread dos not have the READ_CLOCK_OFFSET kernel permision.

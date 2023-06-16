@@ -146,3 +146,31 @@ impl<'a, T> core::fmt::Pointer for BorrowedHandle<'a, T> {
         self.0.fmt(f)
     }
 }
+
+pub unsafe trait AsHandle<'a, T> {
+    fn as_handle(&self) -> HandlePtr<T>;
+}
+
+unsafe impl<'a, T> AsHandle<'a, T> for HandlePtr<T> {
+    fn as_handle(&self) -> HandlePtr<T> {
+        *self
+    }
+}
+
+unsafe impl<'a, T> AsHandle<'a, T> for &'a HandleRef<T> {
+    fn as_handle(&self) -> HandlePtr<T> {
+        self.as_raw()
+    }
+}
+
+unsafe impl<'a, T: HandleType> AsHandle<'a, T> for &'a OwnedHandle<T> {
+    fn as_handle(&self) -> HandlePtr<T> {
+        self.as_raw()
+    }
+}
+
+unsafe impl<'a, T> AsHandle<'a, T> for BorrowedHandle<'a, T> {
+    fn as_handle(&self) -> HandlePtr<T> {
+        self.as_raw()
+    }
+}
