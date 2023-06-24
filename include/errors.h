@@ -18,6 +18,6 @@
 #define DOES_NOT_EXIST -204
 #define ALREADY_EXISTS -205
 #define UNKNOWN_DEVICE -206
-#define WOULDBLOCK -207
+#define WOULD_BLOCK -207
 
 #define SIGNALED -300
