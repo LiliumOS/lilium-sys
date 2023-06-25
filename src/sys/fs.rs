@@ -91,6 +91,10 @@ pub const ACCESS_CREATE_STREAM_ONLY: u32 = 0x100;
 /// When opening a `SymbolicLinkContent` stream, or some other streams that represent a symbolic link, open the stream content directly.
 /// Incompatible with `ACCESS_WRITE`.
 pub const ACCESS_LINK_STREAM_DIRECT: u32 = 0x200;
+/// Truncates the stream to size 0 after opening in `ACCESS_WRITE` mode
+pub const ACCESS_TRUNCATE: u32 = 0x400;
+/// Seek to the last byte of the file after opening. Has no effect if `ACCESS_TRUNCATE` is specified together with `ACCESS_WRITE`.
+pub const ACCESS_START_END: u32 = 0x800;
 
 /// Performs the default operation on the stream being opened
 pub const OP_STREAM_DEFAULT: u32 = 0x00;
