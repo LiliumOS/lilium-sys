@@ -31,18 +31,29 @@ pub const SEEK_FROM_START: u32 = 0;
 pub const SEEK_FROM_END: u32 = 1;
 pub const SEEK_FROM_CURRENT: u32 = 2;
 
+#[repr(C)]
+pub struct PollInfo {
+    pub hdl: HandlePtr<IOHandle>,
+    pub read_bytes: c_ulong,
+    pub status: SysResult,
+}
+
 #[allow(improper_ctypes)]
 extern "C" {
 
+    /// Thread Local handle that is initialized to the standard input stream by the standard library
     #[thread_local]
     pub static __HANDLE_IO_STDIN: HandlePtr<IOHandle>;
 
+    /// Thread Local handle that is initialized to the standard output stream by the standard library
     #[thread_local]
     pub static __HANDLE_IO_STDOUT: HandlePtr<IOHandle>;
 
+    /// Thread Local handle that is initialized to the standard error stream by the standard library
     #[thread_local]
     pub static __HANDLE_IO_STDERR: HandlePtr<IOHandle>;
 
+    /// Reads up to `len` bytes from the given
     pub fn IORead(hdl: HandlePtr<IOHandle>, buf: *mut c_void, len: c_ulong) -> SysResult;
     pub fn IOWrite(hdl: HandlePtr<IOHandle>, buf: *const c_void, len: c_ulong) -> SysResult;
     pub fn IOSeek(hdl: HandlePtr<IOHandle>, from: u32, offset: i64) -> SysResult;
@@ -90,9 +101,11 @@ extern "C" {
     pub fn SetIONotifyMode(hdl: HandlePtr<IOHandle>, notif_flags: u32) -> SysResult;
     pub fn SetIONotifyAddr(hdl: HandlePtr<IOHandle>, addr: *mut c_void) -> SysResult;
 
-    pub fn IOPoll(hdl: HandlePtr<IOHandle>) -> SysResult;
+    pub fn IOPoll(hdl: HandlePtr<IOHandle>, read_len: *mut c_ulong) -> SysResult;
+    pub fn IOPollAll(poll_array: *mut PollInfo, poll_array_len: c_ulong) -> SysResult;
     pub fn IOAbort(hdl: HandlePtr<IOHandle>) -> SysResult;
     pub fn IOJoin(hdl: HandlePtr<IOHandle>) -> SysResult;
+    pub fn IOJoinAll(join_array: *mut PollInfo, join_array_len: c_ulong) -> SysResult;
     pub fn IOPause(hdl: HandlePtr<IOHandle>) -> SysResult;
     pub fn IOResume(hdl: HandlePtr<IOHandle>) -> SysResult;
 
@@ -109,6 +122,7 @@ extern "C" {
         buffer_size: c_long,
     ) -> SysResult;
 
+    /// Creates an `IOHandle` that accesses memory owned by a process.
     pub fn CreateMemoryBuffer(
         hdl: *mut HandlePtr<IOHandle>,
         mode: u32,
@@ -117,5 +131,27 @@ extern "C" {
         chars: u32,
     ) -> SysResult;
 
-    pub fn CloseMemoryBuffer(io: HandlePtr<IOHandle>) -> SysResult;
+    /// Closes an IO stream open in the given `IOHandle`.
+    ///
+    /// ## Errors
+    ///
+    /// Returns `INVALID_HANDLE` if `hdl` is not a valid handle.
+    pub fn CloseIOStream(hdl: HandlePtr<IOHandle>) -> SysResult;
+
+    /// Opens a new IO Handlde that has the same properties and refers to the same object as an existing one, except it can only peform such operations as described by `char_mask`
+    /// The `out_hdl` has the same type as `in_hdl` (if it is a File, `out_hdl` will also refer to the same file directly). Permission checks are not performed when creating the new file descriptor.
+    ///
+    /// The characteristics of the output file are determined by bitwise and of the Characteristics mask and the characteristics of the given handle -
+    ///  `char_mask` can be used to disable operations, but not add new ones.
+    ///
+    /// ## Errors
+    ///
+    /// Returns `INVALID_HANDLE` if `in_hdl` is not a valid handle.
+    ///
+    /// Returns `RESOURCE_LIMIT_EXHAUSTED` if the total number of handles the thread has open exceeds the handle limit.
+    pub fn DuplicateIOHandle(
+        out_hdl: *mut HandlePtr<IOHandle>,
+        in_hdl: HandlePtr<IOHandle>,
+        char_mask: u32,
+    ) -> SysResult;
 }

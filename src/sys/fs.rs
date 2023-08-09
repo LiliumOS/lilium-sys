@@ -128,7 +128,7 @@ pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 pub struct FileOpenOptions {
     /// If set to a non-empty string, designates the explicit stream of the object to open.
     ///
-    /// Only certain filesystems support multiple streams (such as NTFS or PhantomFS). Other filesystems may only support a limited set of standard streams,
+    /// Only certain filesystems support multiple streams (such as NTFS or LiliumFS). Other filesystems may only support a limited set of standard streams,
     /// and the streams supported may depend on the object type and the filesystem.
     ///
     /// Certain stream types permit multiple streams of the type. This is designated by following the stream name with a `$` then the integer number of the stream of that type.
@@ -153,6 +153,7 @@ pub struct DirectoryInfo {
 
 #[repr(C)]
 pub struct ReadDaclRow {
+    pub applied: Uuid,
     pub stream_name: KStrPtr,
     pub perm_name: KStrPtr,
     pub principal: Uuid,
@@ -161,6 +162,7 @@ pub struct ReadDaclRow {
 
 #[repr(C)]
 pub struct DaclRow {
+    pub applied: Uuid,
     pub stream_name: KStrCPtr,
     pub perm_name: KStrCPtr,
     pub principal: Uuid,
@@ -234,6 +236,36 @@ extern "C" {
         acl: HandlePtr<FileHandle>,
     ) -> SysResult;
 
+    /// Creates and opens a directory in an existing directory that does not alias with any other filesystem object, and cannot be named by any other program.
+    /// `resolutionbase` determines the behaviour of path traversals that use `..` to resolve directories outside of the created directory. It also may be used to determine the filesystem the object is created on
+    /// If no `resolutionbase` is given, the current resolution base directory is used instead.
+    ///
+    /// The directory and its contents will be unlinked when the last handle to it is closed. To preserve the contents, `AssociateName` must be used.
+    /// This is guaranteed to succeed only if `resolutionbase` and the `new_name_base` of the `AssociateName` call belong to the same filesystem.
+    ///
+    /// ## Notes
+    /// Privacy is ensured on a best-effort basis only, and the degree to which it is provided is filesystem dependent.
+    /// LiliumFS guarantees that no other thread can open the object created this way,
+    ///  but other filesystems may permit a racing thread to observe the directory under an unspecified name before it is removed from path resolution.
+    /// Virtual Filesystems can provide the same privacy guarantees if they provide an implementation for `fs_create_anonymous_object`.
+    ///
+    /// Regardless of these limitations, the aliasing rule is guaranteed to be upheld, and this function will never error because any object with a given name already exists in the resolution base.
+    ///
+    /// Private directories created by this function are thread-local
+    ///
+    /// ## Errors
+    ///
+    /// Returns PERMISSION if the kernel perission `CREATE_ANONYMOUS_OBJECT` is denied to the current thread, or `CREATE_OBJECT` ACL permission is denied to
+    ///  `resolutionbase`.
+    ///
+    /// Returns RESOURCE_LIMIT_EXHAUSTED if the kernel resource limit `ANONYMOUS_OBJECT_MAX` is exceeded by the current security context.
+    ///
+    /// Returns BUSY if the object cannot be created due to a pendng device operation on the filesystem.
+    ///
+    /// Returns DEVICE_FULL if the object cannot be created due to size limits on the filesystem.
+    ///
+    /// Returns UNSUPPORTED_OPERATION is the filesystem does not support anonymous directories.
+    ///
     pub fn CreatePrivateDirectory(
         dir_handle: *mut HandlePtr<FileHandle>,
         resolutionbase: HandlePtr<FileHandle>,

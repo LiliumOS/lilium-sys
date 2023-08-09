@@ -1,6 +1,8 @@
-use core::ffi::{c_long, c_ulong, c_void};
+use core::ffi::{c_long, c_ulong, c_void, VaList};
 
-use crate::uuid::Uuid;
+use crate::{security::SecurityContext, uuid::Uuid};
+
+use self::udev::DeviceCommandParameter;
 
 use super::{
     fs::FileHandle,
@@ -9,6 +11,8 @@ use super::{
     kstr::{KStrCPtr, KStrPtr},
     result::SysResult,
 };
+
+pub mod udev;
 
 #[repr(C)]
 pub struct BlockDeviceConfiguration {
@@ -121,4 +125,17 @@ extern "C" {
     ) -> SysResult;
 
     pub fn CreateRandomDevice(devid: *mut Uuid, rdevdesc: RandomSourceDescriptor) -> SysResult;
+
+    pub fn RegisterDeviceCommand(
+        devid: *const Uuid,
+        cmdid: *mut Uuid,
+        callback: unsafe extern "C" fn(
+            cmdid: *const Uuid,
+            callctx: HandlePtr<SecurityContext>,
+            ...
+        ) -> SysResult,
+        callback_stack: *mut c_void,
+        sigtys: *const DeviceCommandParameter,
+        param_count: c_ulong,
+    ) -> SysResult;
 }

@@ -99,6 +99,15 @@ extern "C" {
         value: u64,
     ) -> SysResult;
 
+    pub fn GetKernelResourceLimit(
+        ctx: HandlePtr<SecurityContext>,
+        limit_name: KStrCPtr,
+        value: *mut u64,
+    ) -> SysResult;
 
-    pub fn EncodeSecurityContext(ctx: HandlePtr<SecurityContext>, buffer: *mut u8, len: *mut usize) -> SysResult;
+    pub fn EncodeSecurityContext(
+        ctx: HandlePtr<SecurityContext>,
+        buffer: *mut u8,
+        len: *mut usize,
+    ) -> SysResult;
 }

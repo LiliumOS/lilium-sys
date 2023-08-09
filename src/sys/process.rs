@@ -228,8 +228,12 @@ extern "C" {
     /// The termination of other threads occurs at such a time as the thread might recieve a signal from `SignalThread`.
     pub fn ExitProcess(code: u32) -> !;
 
+    /// Creates a new Mapping at `base_addr` if possible (if `0`, picks an address and returns it in `base_addr`), of length `page_count`, using the specified kind and attributes.
+    ///
+    /// If `backing` is specified, memory accesses perform I/O accesses starting from the Seek address of the Handle. The handle must have `CHAR_RANDOMACCESS`, 
+    ///  and the validity of accesses depends on `CHAR_READABLE` and `CHAR_WRITABLE`
     pub fn CreateMapping(
-        base_addr_hint: *mut c_void,
+        base_addr: *mut *mut c_void,
         page_count: c_long,
         map_attrs: u32,
         map_kind: u32,
@@ -243,4 +247,11 @@ extern "C" {
     ) -> SysResult;
 
     pub fn RemoveMapping(mapping_base_addr: *mut c_void, page_count: c_long) -> SysResult;
+
+    pub fn ResizeMapping(
+        mapping_base_addr: *mut c_void,
+        old_page_count: c_long,
+        new_base_addr: *mut c_void,
+        new_page_count: c_long,
+    ) -> SysResult;
 }

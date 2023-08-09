@@ -1,4 +1,4 @@
-//! Low-leel interfaces to PhantomOS
+//! Low-level interfaces to Lilium
 
 pub mod debug;
 pub mod device;
@@ -16,3 +16,4 @@ pub mod signal;
 pub mod socket;
 pub mod thread;
 pub mod time;
+pub mod vti;
