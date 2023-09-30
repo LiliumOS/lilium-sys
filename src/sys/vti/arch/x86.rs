@@ -1,4 +1,7 @@
+use core::ffi::c_void;
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct ArchFaultInfo {
     pub fault_code: usize,
     pub pfla: *mut c_void,

@@ -39,8 +39,8 @@ pub type NonZeroSysResult = nonzero::NonZeroSysResult;
 
 pub mod errors {
     macro_rules! error_def{
-        {$(#define $name:ident $val:expr)* } => {
-            $(pub const $name: super::SysResult = $val;)*
+        {$($(#[$meta:meta])* #define $name:ident $val:expr)* } => {
+            $($(#[$meta])* pub const $name: super::SysResult = $val;)*
         }
     }
     with_builtin_macros::with_builtin! {

@@ -1,9 +1,34 @@
+//!
+//! Handles are objects that are abstract kernel resource which is owned by a single thread.
+//! Handles are active capabilities, their existance represents a permission (or multiple permissions) to an object, and threads using them do not need specific permissions to use the handle.
+//!
+//! Handles are represented by a pointer type, which points to the resource. The [`HandlePtr<H>`] type represents this pointer. Handle pointers are not dereferenceable in userspace,
+//!      it is undefined behaviour in userspace to read or write from them (in most cases, this will generate a Access Violation Exception).
+//!
+//! Handles are single-thread objects and cannot be shared (except actively, via system calls like [`ShareHandle`]) with other threads or processes, even if placed into shared memory.
+//! Using a handle created on a different thread is userspace undefined behaviour (in most cases, this will yield an `INVALID_HANDLE` error).
+//!
+//! Handles are strongly typed, both statically and dynamically. Handles are returned to userspace as specific instantiations of [`HandlePtr<H>`] in accordance with the type of the handle,
+//!  and the handle.
+//! Using a handle of the wrong type to perform an action (except when the type the handle is used as is a supertype of the specific handle type), an `INVALID_HANDLE` error is returned by the system call.
+//! 
+//! Handles may have attached permissions or capabilities, which determine the actions a handle may perform. These permissions belong to the handle itself. 
+//! Not all handles have associated permissions, and only a limited permissions related to the object the handle refers to, such as a thread or process. 
+//! Each handle type describes what permissions each handle describes. 
+//! In the case of handles with standard (kernel, process, or thread) permissions, an ambient permission check occurs at the handle's creation for each attachable permission using the current thread's active security context.
+//! Each permission check that succeeds attaches that permission to the handle. There will typically be methods to drop existing permissions and attach new ones to a handle.
+//! 
+//!
+
 use core::ffi::c_ulong;
 
-use super::result::SysResult;
+use super::{process::ProcessHandle, result::SysResult};
 
+/// An opaque type that represents any object referred to by a handle
 pub struct Handle(());
 
+/// A pointer that represents an opaque handle to an object. 
+/// This type has the same layout as a pointer, but may not be dereferencead as a pointer.
 #[repr(transparent)]
 pub struct HandlePtr<T>(*mut T);
 
@@ -42,9 +67,18 @@ impl<T> core::cmp::PartialEq for HandlePtr<T> {
 impl<T> core::cmp::Eq for HandlePtr<T> {}
 
 impl<T> HandlePtr<T> {
+    /// Creates a null handle pointer of the type.
+    /// Null handles are never valid for operations on a handle, any system call given this handle will return `INVALID_HANDLE`, unless the behaviour is otherwise described.
+    /// This may be used as a reliable init state, or a sentinel value for system calls that may be used without a proper handle to refer to an ambeit handle.
+    /// 
+    /// The result is bitwise-equalivant to a null pointer
     pub const fn null() -> Self {
         Self(core::ptr::null_mut())
     }
+
+    /// Statically converts between handles of different types. This does not alter the value of the handle, or it's dynamic type, 
+    /// and is typically incorrect except to cast to the generic [`Handle`] type,
+    ///  or to upcast (or downcast) to a supertype (or correct subtype).
     pub const fn cast<U>(self) -> HandlePtr<U> {
         HandlePtr(self.0.cast())
     }
@@ -87,4 +121,5 @@ extern "C" {
         shared_handle: SharedHandlePtr,
     ) -> SysResult;
     pub fn IdentHandle(hdl: HandlePtr<Handle>) -> SysResult;
+
 }

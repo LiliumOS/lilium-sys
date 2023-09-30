@@ -1,7 +1,9 @@
 use core::str::FromStr;
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+use bytemuck::{Pod, Zeroable};
+
+#[repr(C, align(16))]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Pod, Zeroable)]
 pub struct Uuid {
     pub minor: u64,
     pub major: u64,
@@ -17,6 +19,10 @@ impl FromStr for Uuid {
 
 impl Uuid {
     pub const NIL: Uuid = Uuid { minor: 0, major: 0 };
+    pub const FULL: Uuid = Uuid {
+        minor: !0,
+        major: !0,
+    };
 }
 
 const fn to_hexdig(c: u8) -> Option<u64> {

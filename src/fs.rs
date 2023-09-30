@@ -1,4 +1,9 @@
-use core::{borrow::Borrow, ffi::c_void, ops::Deref, str::Split};
+use core::{
+    borrow::Borrow,
+    ffi::{c_long, c_void},
+    ops::Deref,
+    str::Split,
+};
 
 use alloc::{
     borrow::Cow,
@@ -6,14 +11,41 @@ use alloc::{
     vec::Vec,
 };
 
+use core::mem::MaybeUninit;
+
 use crate::{
-    result::Error,
+    result::{Error, Result},
     sys::{
         fs::{self as sys, DirectoryInfo, DirectoryNext, DirectoryRead, FileHandle},
         handle::HandlePtr,
-        kstr::{KStrCPtr, KStrPtr},
+        kstr::{KCSlice, KStrCPtr, KStrPtr},
+        result::errors::DOES_NOT_EXIST,
     },
+    time::{Duration, SystemClock, TimePoint},
+    uuid::Uuid,
 };
+
+#[derive(Hash, PartialEq, Eq, Debug)]
+pub struct OwnedFile(HandlePtr<FileHandle>);
+
+impl Clone for OwnedFile {
+    fn clone(&self) -> Self {
+        let mut ptr = MaybeUninit::uninit();
+        unsafe {
+            Error::from_code(sys::DuplicateFile(ptr.as_mut_ptr(), self.0)).unwrap();
+        }
+
+        Self(unsafe { ptr.assume_init() })
+    }
+}
+
+impl Drop for OwnedFile {
+    fn drop(&mut self) {
+        unsafe {
+            sys::CloseFile(self.0);
+        }
+    }
+}
 
 #[repr(transparent)]
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -293,6 +325,7 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> crate::result::Result<()> {
                         op_mode: sys::OP_DIRECTORY_ACCESS,
                         blocking_mode: sys::MODE_BLOCKING,
                         create_acl: HandlePtr::null(),
+                        extended_options: KCSlice::empty(),
                     },
                 )
             }) {
@@ -325,4 +358,221 @@ pub struct DirIterator {
     state: *mut c_void,
 }
 
-pub struct DirEntry {}
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+pub struct FileType(u16);
+
+impl FileType {
+    pub fn is_file(&self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn is_dir(&self) -> bool {
+        self.0 == 1
+    }
+
+    pub fn is_symlink(&self) -> bool {
+        self.0 == 2
+    }
+
+    pub fn is_fifo(&self) -> bool {
+        self.0 == 3
+    }
+
+    pub fn is_socket(&self) -> bool {
+        self.0 == 4
+    }
+
+    pub fn is_block_device(&self) -> bool {
+        self.0 == 5
+    }
+
+    pub fn is_char_device(&self) -> bool {
+        self.0 == 6
+    }
+
+    pub fn is_custom(&self) -> bool {
+        self.0 == 65535
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MetadataEntry {
+    AccessTime(TimePoint<SystemClock>),
+    CreationTime(TimePoint<SystemClock>),
+    ModificationTime(TimePoint<SystemClock>),
+    CreatedBy(String),
+
+    Unknown(String),
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct Metadata {
+    entries: Vec<MetadataEntry>,
+    file_type: FileType,
+    custom_ty: Option<String>,
+    permissions: Permissions,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct Permissions(OwnedFile);
+
+impl Permissions {
+    pub fn readonly(&self) -> bool {
+        unsafe {
+            sys::AclTestPermission(self.0 .0, KStrCPtr::from_str("Write"), KStrCPtr::empty()) == 0
+        }
+    }
+
+    pub fn set_readonly(&mut self, readonly: bool) {
+        // No-op
+        // Behaviour of this function is unclear on Lilium, so the most sensible behaviour is doing literally nothing
+    }
+}
+
+impl Permissions {
+    pub fn empty() -> Result<Self> {
+        let mut hdl = MaybeUninit::uninit();
+
+        Error::from_code(unsafe { sys::CreateAcl(hdl.as_mut_ptr()) })?;
+
+        Ok(Self(OwnedFile(unsafe { hdl.assume_init() })))
+    }
+
+    pub fn default_acl() -> Result<Self> {
+        let mut hdl = MaybeUninit::uninit();
+
+        Error::from_code(unsafe { sys::DefaultAcl(hdl.as_mut_ptr()) })?;
+
+        Ok(Self(OwnedFile(unsafe { hdl.assume_init() })))
+    }
+
+    pub unsafe fn from_file_handle(base: HandlePtr<FileHandle>) -> Result<Self> {
+        let mut hdl = MaybeUninit::uninit();
+
+        Error::from_code(unsafe { sys::CopyAcl(hdl.as_mut_ptr(), base) })?;
+
+        Ok(Self(OwnedFile(unsafe { hdl.assume_init() })))
+    }
+
+    /// Tests whether the current thread has the given `name`d permission in the ACL represented by this object.
+    ///
+    /// This takes into account both the DACL and legacy security descriptor.
+    ///
+    pub fn test_permission(&self, name: &str) -> Result<bool> {
+        match Error::from_code(unsafe {
+            sys::AclTestPermission(self.0 .0, KStrCPtr::from_str(name), KStrCPtr::empty())
+        }) {
+            Ok(()) => Ok(true),
+            Err(Error::Permission) => Ok(false),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn test_stream_permission(&self, name: &str, stream: &str) -> Result<bool> {
+        match Error::from_code(unsafe {
+            sys::AclTestPermission(
+                self.0 .0,
+                KStrCPtr::from_str(name),
+                KStrCPtr::from_str(stream),
+            )
+        }) {
+            Ok(()) => Ok(true),
+            Err(Error::Permission) => Ok(false),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn legacy_mode(&self) -> Option<u32> {
+        let mode = unsafe { sys::AclLegacyMode(self.0 .0) };
+
+        match Error::from_code(mode) {
+            Ok(()) => Some(mode as u32),
+            Err(Error::DoesNotExist) => None,
+            Err(e) => Err(e).unwrap(),
+        }
+    }
+
+    pub fn legacy_uid(&self) -> Option<u32> {
+        let mode = unsafe { sys::AclLegacyUid(self.0 .0) };
+
+        match Error::from_code(mode) {
+            Ok(()) => Some(mode as u32),
+            Err(Error::DoesNotExist) => None,
+            Err(e) => Err(e).unwrap(),
+        }
+    }
+
+    pub fn legacy_gid(&self) -> Option<u32> {
+        let mode = unsafe { sys::AclLegacyGid(self.0 .0) };
+
+        match Error::from_code(mode) {
+            Ok(()) => Some(mode as u32),
+            Err(Error::DoesNotExist) => None,
+            Err(e) => Err(e).unwrap(),
+        }
+    }
+
+    pub fn set_legacy_mode(&mut self, mode: u32) -> Result<()> {
+        Error::from_code(unsafe { sys::AclSetLegacyMode(self.0 .0, mode) })
+    }
+
+    pub fn set_legacy_uid(&mut self, uid: u32) -> Result<()> {
+        Error::from_code(unsafe { sys::AclSetLegacyUid(self.0 .0, uid as c_long) })
+    }
+
+    pub fn set_legacy_gid(&mut self, gid: u32) -> Result<()> {
+        Error::from_code(unsafe { sys::AclSetLegacyUid(self.0 .0, gid as c_long) })
+    }
+
+    pub fn set_owner(&mut self, uuid: Uuid) -> Result<()> {
+        Error::from_code(unsafe { sys::SetObjectOwner(self.0 .0, &uuid) })
+    }
+
+    pub fn take_ownership(&mut self) -> Result<()> {
+        let mut uuid = MaybeUninit::uninit();
+        Error::from_code(unsafe {
+            crate::sys::permission::GetPrimaryPrincipal(HandlePtr::null(), uuid.as_mut_ptr())
+        })?;
+
+        let uuid = unsafe { uuid.assume_init() };
+
+        Error::from_code(unsafe { sys::SetObjectOwner(self.0 .0, &uuid) })
+    }
+
+    /// Determines the owner of the file represented by this [`Permissions`] structure.
+    ///
+    /// Returns `Some(principal)` if the owner is determined, or `None` if no owner is present.
+    ///
+    /// A permission object may have no owner in one of many ways:
+    /// * The object has an ACL, and no `ObjectOwner` row exists,
+    /// * The object has no ACL but has a legacy security descriptor, and the uid is not present in the principal map for the current filesystem, nor the default principal map,
+    /// * The object has neither an ACL nor a legacy security descriptor (this is possible on a [`Permissions`] object obtained from a filesystem without either ACLs or legacy permissions when an override is not provided), or
+    /// * The Object does not represent an ACL or legacy descriptor, nor is an ACL or legacy descriptor accesible via the handle the [`Permission`] object wraps.
+    ///
+    ///
+    /// This always returns a principal in the enhanced permission space.
+    pub fn owner(&self) -> Option<Uuid> {
+        let mut uuid = MaybeUninit::uninit();
+        match Error::from_code(unsafe { sys::ObjectOwner(self.0 .0, uuid.as_mut_ptr()) }) {
+            Ok(()) => Some(unsafe { uuid.assume_init() }),
+            Err(Error::DoesNotExist) => None,
+            Err(e) => panic!("Unexpected error: {:?}", e),
+        }
+    }
+}
+
+pub struct OpenOptions(sys::FileOpenOptions);
+
+impl OpenOptions {
+    pub fn new() -> OpenOptions {
+        Self(sys::FileOpenOptions {
+            stream_override: todo!(),
+            access_mode: todo!(),
+            op_mode: todo!(),
+            blocking_mode: todo!(),
+            create_acl: todo!(),
+            extended_options: todo!(),
+        })
+    }
+}

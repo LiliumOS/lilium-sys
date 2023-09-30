@@ -54,4 +54,7 @@ extern "C" {
     pub fn get_tls_block_size() -> c_ulong;
     /// Returns the offset from the beginning of the TLS base address for dyanmically allocated thread locals (via tss_t or pthread_key_t)
     pub fn get_tls_slide_offset() -> c_long;
+
+    pub fn thread_init_after_start(th: HandlePtr<ThreadHandle>) -> c_long;
+    pub fn thread_init_self() -> c_long;
 }

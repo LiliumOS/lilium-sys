@@ -20,7 +20,7 @@ pub const FLAG_START_SUSPENDED: c_long = 0x02;
 pub const FLAG_NON_PRIVILAGED: c_long = 0x04;
 /// Require at least the privilages in start_security_context when spawning a privilaged process
 pub const FLAG_REQUIRED_PRIVILAGED: c_long = 0x08;
-/// Hide the process from any EnumerateProcesses system call that doesn't pass the flag `ENUMERATE_VIEW_HIDDEN`.
+/// Sets `PROC_ATTR_HIDDEN` on the created process
 pub const FLAG_HIDE_PROCESS: c_long = 0x10;
 /// Does not load process using standard interpreter loading rules (#! or ELF `.interp` segment).
 ///
@@ -230,7 +230,7 @@ extern "C" {
 
     /// Creates a new Mapping at `base_addr` if possible (if `0`, picks an address and returns it in `base_addr`), of length `page_count`, using the specified kind and attributes.
     ///
-    /// If `backing` is specified, memory accesses perform I/O accesses starting from the Seek address of the Handle. The handle must have `CHAR_RANDOMACCESS`, 
+    /// If `backing` is specified, memory accesses perform I/O accesses starting from the Seek address of the Handle. The handle must have `CHAR_RANDOMACCESS`,
     ///  and the validity of accesses depends on `CHAR_READABLE` and `CHAR_WRITABLE`
     pub fn CreateMapping(
         base_addr: *mut *mut c_void,

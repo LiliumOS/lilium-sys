@@ -1,3 +1,4 @@
+use core::ffi::c_void;
 use core::{
     ffi::{c_long, c_ulong},
     marker::PhantomData,
@@ -28,6 +29,7 @@ use crate::{
     fs::{Path, PathBuf},
     handle::{AsHandle, BorrowedHandle},
     io::IOHandle,
+    result::Result,
     security::SecurityContext,
     sys::{
         fs::FileHandle,
@@ -35,18 +37,21 @@ use crate::{
         io::{__HANDLE_IO_STDERR, __HANDLE_IO_STDIN, __HANDLE_IO_STDOUT},
         isolation::NamespaceHandle,
         kstr::KStrCPtr,
-        process::{self, CreateProcess, EnvironmentMapHandle, ProcessHandle, ProcessStartContext},
+        process::{
+            self as sys, CreateProcess, EnumerateProcessHandle, EnvironmentMapHandle,
+            ProcessHandle, ProcessStartContext,
+        },
     },
 };
 
 bitflags::bitflags! {
     pub struct ProcessStartFlags : c_long{
-        const START_SUSPENDED = process::FLAG_START_SUSPENDED;
-        const NON_PRIVLAGED = process::FLAG_NON_PRIVILAGED;
-        const REQUIRE_PRIVILAGED = process::FLAG_REQUIRED_PRIVILAGED;
-        const HIDE_PROCESS = process::FLAG_HIDE_PROCESS;
-        const NO_INTERP = process::FLAG_NO_INTERP;
-        const REPLACE_IMAGE = process::FLAG_REPLACE_IMAGE;
+        const START_SUSPENDED = sys::FLAG_START_SUSPENDED;
+        const NON_PRIVLAGED = sys::FLAG_NON_PRIVILAGED;
+        const REQUIRE_PRIVILAGED = sys::FLAG_REQUIRED_PRIVILAGED;
+        const HIDE_PROCESS = sys::FLAG_HIDE_PROCESS;
+        const NO_INTERP = sys::FLAG_NO_INTERP;
+        const REPLACE_IMAGE = sys::FLAG_REPLACE_IMAGE;
     }
 }
 
@@ -198,4 +203,24 @@ impl<'a> Command<'a> {
         self.init_handles.push(hdl.as_handle().cast());
         self
     }
+
+    pub fn stdin<P: AsHandle<'a, IOHandle>>(&mut self, hdl: P) -> &mut Self {
+        self.init_handles[0] = hdl.as_handle().cast();
+        self
+    }
+
+    pub fn stdout<P: AsHandle<'a, IOHandle>>(&mut self, hdl: P) -> &mut Self {
+        self.init_handles[1] = hdl.as_handle().cast();
+        self
+    }
+
+    pub fn stderr<P: AsHandle<'a, IOHandle>>(&mut self, hdl: P) -> &mut Self {
+        self.init_handles[2] = hdl.as_handle().cast();
+        self
+    }
+}
+
+pub struct ProcessIterator {
+    hdl: HandlePtr<EnumerateProcessHandle>,
+    state: *mut c_void,
 }

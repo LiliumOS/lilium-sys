@@ -6,12 +6,22 @@ use core::{
 
 pub use crate::sys::io::IOHandle;
 use crate::{
-    handle::{HandleRef, OwnedHandle},
+    handle::{AsHandle, HandleRef, OwnedHandle},
     sys::{
+        fs::FileHandle,
         handle::HandlePtr,
-        io::{CloseMemoryBuffer, IOAbort, IORead},
+        io::{CloseIOStream, IOAbort, IORead},
     },
 };
+
+unsafe impl<'a, H> AsHandle<'a, IOHandle> for H
+where
+    H: AsHandle<'a, FileHandle>,
+{
+    fn as_handle(&self) -> HandlePtr<IOHandle> {
+        <Self as AsHandle<'a, FileHandle>>::as_handle(self).cast()
+    }
+}
 
 impl HandleRef<IOHandle> {
     pub fn read(&self, buf: &mut [u8]) -> crate::result::Result<usize> {
@@ -38,7 +48,7 @@ pub struct ReadMemBuf<'a>(HandlePtr<IOHandle>, PhantomData<&'a [u8]>);
 
 impl<'a> Drop for ReadMemBuf<'a> {
     fn drop(&mut self) {
-        let code = unsafe { CloseMemoryBuffer(self.0) };
+        let code = unsafe { CloseIOStream(self.0) };
         debug_assert_eq!(
             code,
             0,

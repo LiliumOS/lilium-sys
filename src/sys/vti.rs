@@ -4,7 +4,7 @@ pub mod arch {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub mod x86;
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    use x86::*;
+    pub use x86::*;
 }
 
 #[repr(C)]

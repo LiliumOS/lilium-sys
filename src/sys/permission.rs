@@ -1,4 +1,4 @@
-use core::ffi::c_long;
+use core::ffi::{c_long, c_ulong};
 
 use crate::uuid::Uuid;
 
@@ -47,6 +47,16 @@ extern "C" {
         ph: HandlePtr<ProcessHandle>,
         perm: KStrCPtr,
     ) -> SysResult;
+
+    /// Sets the primary principal of the security context.
+    ///
+    /// ## Permission Check
+    ///
+    /// ctx must have principal as one of it's principals (either an explicit primary or an explicit secondary principal), or the thread must have the kernel permission SECURITY_SET_CREDENTIAL.
+    pub fn SetPrimaryPrincipal(ctx: HandlePtr<SecurityContext>, principal: *const Uuid);
+
+    pub fn AddSecondaryPrincipal(ctx: HandlePtr<SecurityContext>, principal: *const Uuid);
+
     pub fn GrantKernelPermission(
         ctx: HandlePtr<SecurityContext>,
         perm: KStrCPtr,
@@ -109,5 +119,12 @@ extern "C" {
         ctx: HandlePtr<SecurityContext>,
         buffer: *mut u8,
         len: *mut usize,
+    ) -> SysResult;
+
+    pub fn GetPrimaryPrincipal(ctx: HandlePtr<SecurityContext>, principal: *mut Uuid) -> SysResult;
+    pub fn GetSecondaryPrincipals(
+        ctx: HandlePtr<SecurityContext>,
+        principals: *mut Uuid,
+        principals_len: *mut c_ulong,
     ) -> SysResult;
 }

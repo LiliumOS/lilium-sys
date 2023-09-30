@@ -15,7 +15,7 @@ impl RandomDevice {
     pub fn read_bytes(&self, bytes: &mut [u8]) -> crate::result::Result<()> {
         let len = bytes.len();
         crate::result::Error::from_code(unsafe {
-            crate::sys::random::GetRandomBytes(bytes as *mut [u8] as *mut c_void, len, self.0)
+            crate::sys::random::GetRandomBytes(bytes as *mut [u8] as *mut c_void, len, &self.0)
         })
     }
 }

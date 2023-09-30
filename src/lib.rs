@@ -4,13 +4,26 @@
 
 extern crate alloc;
 
-pub mod fs;
-pub mod handle;
-pub mod io;
-pub mod kstr;
-pub mod process;
-pub mod random;
-pub mod result;
-pub mod security;
 pub mod sys;
+
 pub mod uuid;
+
+#[cfg(feature = "api")]
+pub mod fs;
+#[cfg(feature = "api")]
+pub mod handle;
+#[cfg(feature = "api")]
+pub mod io;
+#[cfg(feature = "api")]
+pub mod kstr;
+#[cfg(feature = "api")]
+pub mod process;
+#[cfg(feature = "api")]
+pub mod random;
+#[cfg(feature = "api")]
+pub mod result;
+#[cfg(feature = "api")]
+pub mod security;
+
+#[cfg(feature = "api")]
+pub mod time;

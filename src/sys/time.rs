@@ -4,6 +4,7 @@ use crate::uuid::{parse_uuid, Uuid};
 
 use super::result::SysResult;
 
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
 pub struct Duration {
     pub seconds: i64,
@@ -11,7 +12,7 @@ pub struct Duration {
 }
 
 #[repr(C)]
-pub struct ClockOffset {
+pub union ClockOffset {
     pub clockid: Uuid,
     pub offset: Duration,
 }
@@ -21,6 +22,8 @@ pub struct ClockOffset {
 /// This clock may be modified to adjust the global system time. This operation requires the WRITE_REALTIME_CLOCK kernel permission.
 ///
 /// Any process can read from this clock, provided they have the READ_CLOCK_OFFSET kernel permision.
+///
+/// The precision of this clock is unspecified, but is at least 0.001 seconds.
 pub const CLOCK_EPOCH: Uuid = parse_uuid("c8baabaf-b534-3fa1-929e-6177713e93f4");
 
 /// A Clock that tracks monotonically increasing time from an unspecified point.
@@ -36,6 +39,8 @@ pub const CLOCK_EPOCH: Uuid = parse_uuid("c8baabaf-b534-3fa1-929e-6177713e93f4")
 /// This clock may not be modified by a thread. Attempting to do so via `ResetClockOffset` returns INVALID_OPERATION.
 ///
 /// Any process can read from this clock, provided they have the READ_CLOCK_OFFSET kernel permision.
+///
+/// The precision o this clock is unspecified, but shall be at least as precise as `CLOCK_EPOCH`.
 pub const CLOCK_MONOTONIC: Uuid = parse_uuid("df95f5b1-bbb7-3562-8c7a-6c3ce0a5dd95");
 
 extern "C" {
@@ -52,6 +57,8 @@ extern "C" {
     /// Reads the current offset from the epoch, as a Duration, of multiple specified Clocks.
     /// This may be used to synchronize two clocks at a point
     ///
+    /// The precision of the values returned is rounded to the maximum common precision of all clocks, S,
+    ///   and the deviation of the returned offset from the actual offset of the clock is at most 0.5S.
     ///
     /// ## Errors
     /// Returns UNKNOWN_DEVICE if any `clock_id` specified is not a valid Clock Device id. Returns PERMISSION if read access to the clock device is denied,
@@ -69,4 +76,13 @@ extern "C" {
     /// Returns PERMISSION if write access to the clock device is denied, or the current thread does not have the WRITE_CLOCK_OFFSET kernel premission.
     ///
     pub fn ResetClockOffset(dur: Duration, clock: Uuid) -> SysResult;
+
+    ///
+    /// Obtains the precision of the clock, that is, the smallest time step that the clock can step by - the difference between two calls to `GetClockOffset` without an intervening `ResetClockOffset` call on this clock is guaranteed to be a multiple of this value
+    /// ## Errors
+    ///
+    /// Returns UNKNOWN_DEVICE if `clock` is not a valid Clock device id.
+    ///
+    /// Returns PERMISSION of read access to the clock is denied, or the current thread does not have the `READ_CLOCK_GRANULARITY` permission.
+    pub fn GetClockGranularity(offset: *mut Duration, clock: Uuid) -> SysResult;
 }

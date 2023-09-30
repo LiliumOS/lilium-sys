@@ -37,7 +37,10 @@
 //!
 //!
 
-use core::ffi::{c_long, c_void};
+use core::{
+    ffi::{c_long, c_void},
+    mem::MaybeUninit,
+};
 
 use crate::uuid::Uuid;
 
@@ -45,7 +48,7 @@ use super::{
     handle::{Handle, HandlePtr},
     io::IOHandle,
     ipc::IPCServerHandle,
-    kstr::{KStrCPtr, KStrPtr},
+    kstr::{KCSlice, KStrCPtr, KStrPtr},
     result::SysResult,
     socket::SocketHandle,
 };
@@ -124,6 +127,40 @@ pub const OP_NO_ACCESS: u32 = 0x04;
 
 pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 
+/// Flag that indicates
+
+/// The Header of a [`FileOpenOption`]
+#[repr(C, align(32))]
+#[derive(Copy, Clone, bytemuck::Zeroable)]
+pub struct FileOptionHead {
+    /// The type of the option
+    pub ty: Uuid,
+    /// Flags for the option.
+    /// The following bits are defined:
+    /// * Bit 0 ([`OPTION_FLAG_OPTIONAL`]): If set, the kernel may ignore the option if the type is not recognized. Otherwise must error with [`INVALID_OPTION`][`lilium_sys::sys::result::error::INVALID_OPTION`]
+    pub flags: u32,
+    #[doc(hidden)]
+    pub __reserved: [u32; 3],
+}
+
+/// An option for opening the file
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct UnknownFileOpenOption {
+    /// The header
+    pub head: FileOptionHead,
+    /// The tail
+    pub tail: [MaybeUninit<u8>; 64],
+}
+
+#[repr(C, align(32))]
+pub union FileOpenOption {
+    /// The Header: Must be present on all subfields
+    pub head: FileOptionHead,
+    /// Fallback type for all fields
+    pub unknown: UnknownFileOpenOption,
+}
+
 #[repr(C)]
 pub struct FileOpenOptions {
     /// If set to a non-empty string, designates the explicit stream of the object to open.
@@ -142,6 +179,8 @@ pub struct FileOpenOptions {
     pub blocking_mode: u32,
     /// For `ACCESS_CREATE`, when creating the file, overrides the default access control list for the created object.
     pub create_acl: HandlePtr<FileHandle>,
+    /// Extended open options
+    pub extended_options: KCSlice<FileOpenOption>,
 }
 
 #[repr(C)]
@@ -169,6 +208,11 @@ pub struct DaclRow {
     pub mode: u32,
 }
 
+pub const ACL_MODE_ALLOW: u32 = 0;
+pub const ACL_MODE_DENY: u32 = 1;
+pub const ACL_MODE_FORBID: u32 = 2;
+pub const ACL_MODE_INHERIT: u32 = 3;
+
 #[allow(improper_ctypes)]
 extern "C" {
     /// Opens a new file handle with the given path
@@ -179,7 +223,7 @@ extern "C" {
         opts: *const FileOpenOptions,
     ) -> SysResult;
 
-    /// Reopens the given file, allowing you to change access modes and operation modes. The handle is modified in-place - this affects any `SharedHandle` created from it
+    /// Reopens the given file, allowing you to change access modes and operation modes. The handle is modified in-place - this affects any `SharedHandle` created from it or any handle recieved on another thread
     /// If an error occurs, the hdl continues to refer to the original object or stream in the previous operating mode.
     ///
     /// This operation does not change the referent of the handle, in particular:
@@ -187,6 +231,11 @@ extern "C" {
     /// * If hdl referred to a symlink, then it will continue to refer to that symlink, whether or not`ACCESS_LINK_STREAM_DIRECT` is present in `new_opts`
     /// * paths are not resolved when reopening the file
     pub fn ReopenFile(hdl: HandlePtr<FileHandle>, new_opts: *const FileOpenOptions) -> SysResult;
+
+    pub fn DuplicateFile(
+        new_hdl: *mut HandlePtr<FileHandle>,
+        old_hdl: HandlePtr<FileHandle>,
+    ) -> SysResult;
 
     pub fn CloseFile(hdl: HandlePtr<FileHandle>) -> SysResult;
     pub fn DirectoryNext(hdl: HandlePtr<FileHandle>, state: *mut *mut c_void) -> SysResult;
@@ -202,7 +251,7 @@ extern "C" {
     pub fn CreateAcl(hdl: *mut HandlePtr<FileHandle>) -> SysResult;
     pub fn DefaultAcl(hdl: *mut HandlePtr<FileHandle>) -> SysResult;
     pub fn ObjectOwner(hdl: HandlePtr<FileHandle>, uuid: *mut Uuid) -> SysResult;
-    pub fn SetObjetOwner(hdl: HandlePtr<FileHandle>, uuid: *const Uuid) -> SysResult;
+    pub fn SetObjectOwner(hdl: HandlePtr<FileHandle>, uuid: *const Uuid) -> SysResult;
     pub fn AclNextRow(hdl: HandlePtr<FileHandle>, state: *mut *mut c_void) -> SysResult;
     pub fn AclReadRow(
         hdl: HandlePtr<FileHandle>,
@@ -217,6 +266,7 @@ extern "C" {
     pub fn AclLegacyUid(hdl: HandlePtr<FileHandle>) -> SysResult;
     pub fn AclLegacyGid(hdl: HandlePtr<FileHandle>) -> SysResult;
     pub fn AclLegacyMode(hdl: HandlePtr<FileHandle>) -> SysResult;
+    pub fn AclSetLegacyMode(hdl: HandlePtr<FileHandle>, mode: u32) -> SysResult;
     pub fn AclSetLegacyUid(hdl: HandlePtr<FileHandle>, uid: c_long) -> SysResult;
     pub fn AclSetLegacyGid(hdl: HandlePtr<FileHandle>, gid: c_long) -> SysResult;
     pub fn OverwriteAcl(
@@ -228,6 +278,18 @@ extern "C" {
         file_hdl: HandlePtr<FileHandle>,
     ) -> SysResult;
     pub fn SetDefaultAcl(acl: HandlePtr<FileHandle>) -> SysResult;
+    pub fn AclTestPermission(
+        hdl: HandlePtr<FileHandle>,
+        permission: KStrCPtr,
+        stream: KStrCPtr,
+    ) -> SysResult;
+    pub fn AclSetPermission(
+        hdl: HandlePtr<FileHandle>,
+        permission: KStrCPtr,
+        stream: KStrCPtr,
+        id: &Uuid,
+        mode: u32,
+    ) -> SysResult;
 
     pub fn CreateDirectory(
         dir_handle: *mut HandlePtr<FileHandle>,
@@ -279,6 +341,10 @@ extern "C" {
         old_name_base: HandlePtr<FileHandle>,
         old_name: KStrCPtr,
     ) -> SysResult;
+    /// Associates the given object with a name specified by `new_name` beginning resolution from `new_name_base`. This is equivalent to `CreateHardLink` but refers to an object by handle rather than by path.
+    ///
+    /// This function may be used if the object has no name (IE. a directory created via `CreatePrivateDirectory`),
+    ///
     pub fn AssociateName(
         file: HandlePtr<FileHandle>,
         new_name_base: HandlePtr<FileHandle>,

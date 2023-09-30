@@ -93,6 +93,6 @@ impl HandleRef<SecurityContext> {
         Error::from_code(status)?;
         Ok(PermissionStatus::from_bits_retain(status))
     }
-}
 
-pub mod known_permissions {}
+    
+}

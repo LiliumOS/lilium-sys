@@ -1,12 +1,12 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
 macro_rules! error_def{
-    {$(#define $name:ident $val:pat)* } => {
+    {$($(#[$meta:meta])* #define $name:ident $val:pat)* } => {
         paste::paste!{
             #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
             pub enum Error{
                 Unknown(core::ffi::c_long),
-                $([<$name:camel>]),*
+                $($(#[$meta])* [<$name:camel>]),*
             }
 
             impl Error{
