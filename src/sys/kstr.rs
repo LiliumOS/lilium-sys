@@ -65,3 +65,25 @@ impl<T> KCSlice<T> {
         }
     }
 }
+
+#[repr(C)]
+pub struct KSlice<T> {
+    pub arr_ptr: *mut T,
+    pub len: c_ulong,
+}
+
+impl<T> KSlice<T> {
+    pub const fn empty() -> Self {
+        Self {
+            arr_ptr: core::ptr::NonNull::dangling().as_ptr(),
+            len: 0,
+        }
+    }
+
+    pub fn from_slice_mut(sl: &mut [T]) -> KSlice<T> {
+        Self {
+            arr_ptr: sl.as_mut_ptr(),
+            len: sl.len() as c_ulong,
+        }
+    }
+}

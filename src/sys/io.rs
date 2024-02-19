@@ -154,4 +154,21 @@ extern "C" {
         in_hdl: HandlePtr<IOHandle>,
         char_mask: u32,
     ) -> SysResult;
+
+    /// Sets the I/O buffer size for partially complete I/O operations.
+    ///
+    /// When an IO operation is requested, that is not completely fulfilled, and partial data is available,
+    /// the operation will block until at least the specified number of bytes are available.
+    ///
+    /// If the data available is final, it may return less than this size,
+    ///  and if fewer bytes are requested, only that many bytes will be required before returning.
+    ///
+    /// This function is guaranteed to affect:
+    /// * The Read end of pipes
+    /// * A socket
+    /// * An IPC Connection
+    ///
+    /// And this function may affect a device handle referring to a character device. It is device specific whether it affects handles to that device
+    ///
+    pub fn IOSetMinReadSize(hdl: HandlePtr<IOHandle>, buf: c_ulong) -> SysResult;
 }

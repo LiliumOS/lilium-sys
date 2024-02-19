@@ -40,4 +40,5 @@ pub struct Registers {
     pub rescr: [usize; 3],
     pub cr8: usize,
     pub rescrn: [usize; 7],
+    pub rx_apx: [usize; 8],
 }

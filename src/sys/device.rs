@@ -172,15 +172,14 @@ extern "C" {
     ///
     pub fn RemoveCharDevice(backing_hdl: HandlePtr<IOHandle>) -> SysResult;
 
-    /// Opens a block device by it's id, if the given device exists.
+    /// Opens a device by it's id, if the given device exists.
     ///
     /// ## Errors
     ///
-    /// If `id` does not identify a valid device, returns `
+    /// If `id` does not identify a valid device, returns `UNKNOWN_DEVICE`
     ///
     ///
-    pub fn OpenBlockDevice(hdl: *mut HandlePtr<DeviceHandle>, id: Uuid) -> SysResult;
-    pub fn OpenCharDevice(hdl: *mut HandlePtr<DeviceHandle>, id: Uuid) -> SysResult;
+    pub fn OpenDevice(hdl: *mut HandlePtr<DeviceHandle>, id: Uuid) -> SysResult;
     pub fn CloseDevice(hdl: HandlePtr<DeviceHandle>) -> SysResult;
 
     pub fn GetDeviceLabel(hdl: HandlePtr<DeviceHandle>, label: *mut KStrPtr) -> SysResult;

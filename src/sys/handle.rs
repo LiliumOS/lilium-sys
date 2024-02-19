@@ -11,13 +11,13 @@
 //! Handles are strongly typed, both statically and dynamically. Handles are returned to userspace as specific instantiations of [`HandlePtr<H>`] in accordance with the type of the handle,
 //!  and the handle.
 //! Using a handle of the wrong type to perform an action (except when the type the handle is used as is a supertype of the specific handle type), an `INVALID_HANDLE` error is returned by the system call.
-//! 
-//! Handles may have attached permissions or capabilities, which determine the actions a handle may perform. These permissions belong to the handle itself. 
-//! Not all handles have associated permissions, and only a limited permissions related to the object the handle refers to, such as a thread or process. 
-//! Each handle type describes what permissions each handle describes. 
+//!
+//! Handles may have attached permissions or capabilities, which determine the actions a handle may perform. These permissions belong to the handle itself.
+//! Not all handles have associated permissions, and only a limited permissions related to the object the handle refers to, such as a thread or process.
+//! Each handle type describes what permissions each handle describes.
 //! In the case of handles with standard (kernel, process, or thread) permissions, an ambient permission check occurs at the handle's creation for each attachable permission using the current thread's active security context.
 //! Each permission check that succeeds attaches that permission to the handle. There will typically be methods to drop existing permissions and attach new ones to a handle.
-//! 
+//!
 //!
 
 use core::ffi::c_ulong;
@@ -27,7 +27,7 @@ use super::{process::ProcessHandle, result::SysResult};
 /// An opaque type that represents any object referred to by a handle
 pub struct Handle(());
 
-/// A pointer that represents an opaque handle to an object. 
+/// A pointer that represents an opaque handle to an object.
 /// This type has the same layout as a pointer, but may not be dereferencead as a pointer.
 #[repr(transparent)]
 pub struct HandlePtr<T>(*mut T);
@@ -70,13 +70,13 @@ impl<T> HandlePtr<T> {
     /// Creates a null handle pointer of the type.
     /// Null handles are never valid for operations on a handle, any system call given this handle will return `INVALID_HANDLE`, unless the behaviour is otherwise described.
     /// This may be used as a reliable init state, or a sentinel value for system calls that may be used without a proper handle to refer to an ambeit handle.
-    /// 
+    ///
     /// The result is bitwise-equalivant to a null pointer
     pub const fn null() -> Self {
         Self(core::ptr::null_mut())
     }
 
-    /// Statically converts between handles of different types. This does not alter the value of the handle, or it's dynamic type, 
+    /// Statically converts between handles of different types. This does not alter the value of the handle, or it's dynamic type,
     /// and is typically incorrect except to cast to the generic [`Handle`] type,
     ///  or to upcast (or downcast) to a supertype (or correct subtype).
     pub const fn cast<U>(self) -> HandlePtr<U> {
@@ -97,6 +97,32 @@ impl core::fmt::Pointer for SharedHandlePtr {
 unsafe impl Send for SharedHandlePtr {}
 unsafe impl Sync for SharedHandlePtr {}
 
+/// A Handle that is 16 bytes in size, regardless of the size of [`HandlePtr<T>`].
+/// The excess (padding) bytes must be initialized to `0`.
+#[repr(C)]
+pub struct WideHandle<T> {
+    /// The handle stored by the [`WideHandle<T>`]. This is guaranteed to be at offset 0 of the struct.
+    pub handle: HandlePtr<T>,
+    #[doc(hidden)]
+    pub __pad: [u32; (16 - core::mem::size_of::<HandlePtr<Handle>>()) >> 2],
+}
+
+impl<T> WideHandle<T> {
+    /// The Constant `null`. This can be used to initialize the padding bytes with struct member update syntax
+    pub const NULL: Self = Self {
+        handle: HandlePtr::null(),
+        __pad: [0; (16 - core::mem::size_of::<HandlePtr<Handle>>()) >> 2],
+    };
+}
+
+impl<T> Clone for WideHandle<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for WideHandle<T> {}
+
 pub const HANDLE_TYPE_PROC: c_ulong = 1;
 pub const HANDLE_TYPE_THREAD: c_ulong = 2;
 pub const HANDLE_TYPE_IO: c_ulong = 3;
@@ -111,13 +137,22 @@ pub const HANDLE_SUBTYPE_IO_IPCCON: c_ulong = 0x80000003;
 pub const HANDLE_SUBTYPE_IO_IPCSERVER: c_ulong = 0x90000003;
 pub const HANDLE_TYPE_DEBUG: c_ulong = 4;
 pub const HANDLE_TYPE_SECURITY: c_ulong = 5;
+pub const HANDLE_TYPE_NAMESPACE: c_ulong = 6;
+pub const HANDLE_TYPE_ENVMAP: c_ulong = 7;
+
+/// Causes upgrade requests to skip privilege checks
+pub const SHARE_FLAG_UPGRADE_PRIVILEGED: u32 = 1;
 
 #[allow(improper_ctypes)]
 extern "C" {
-    pub fn ShareHandle(shared_handle: *mut SharedHandlePtr, hdl: HandlePtr<Handle>) -> SysResult;
+    pub fn ShareHandle(
+        shared_handle: *mut SharedHandlePtr,
+        hdl: HandlePtr<Handle>,
+        flags: u32,
+    ) -> SysResult;
     pub fn UnshareHandle(hdl: HandlePtr<Handle>) -> SysResult;
     pub fn UpgradeSharedHandle(
-        hdlout: HandlePtr<Handle>,
+        hdlout: *mut HandlePtr<Handle>,
         shared_handle: SharedHandlePtr,
     ) -> SysResult;
     pub fn IdentHandle(hdl: HandlePtr<Handle>) -> SysResult;

@@ -14,6 +14,7 @@ use alloc::{
 use core::mem::MaybeUninit;
 
 use crate::{
+    handle::{OwnedHandle, SharedHandle},
     result::{Error, Result},
     sys::{
         fs::{self as sys, DirectoryInfo, DirectoryNext, DirectoryRead, FileHandle},
@@ -21,21 +22,22 @@ use crate::{
         kstr::{KCSlice, KStrCPtr, KStrPtr},
         result::errors::DOES_NOT_EXIST,
     },
+    thread::TlsKey,
     time::{Duration, SystemClock, TimePoint},
     uuid::Uuid,
 };
 
 #[derive(Hash, PartialEq, Eq, Debug)]
-pub struct OwnedFile(HandlePtr<FileHandle>);
+pub struct OwnedFile(OwnedHandle<FileHandle>);
 
 impl Clone for OwnedFile {
     fn clone(&self) -> Self {
         let mut ptr = MaybeUninit::uninit();
         unsafe {
-            Error::from_code(sys::DuplicateFile(ptr.as_mut_ptr(), self.0)).unwrap();
+            Error::from_code(sys::DuplicateFile(ptr.as_mut_ptr(), self.0.as_raw())).unwrap();
         }
 
-        Self(unsafe { ptr.assume_init() })
+        Self(unsafe { OwnedHandle::take_ownership(ptr.assume_init()) })
     }
 }
 
@@ -46,6 +48,9 @@ impl Drop for OwnedFile {
         }
     }
 }
+
+#[derive(Hash, PartialEq, Eq, Debug)]
+pub struct SharedFile(SharedHandle<FileHandle>);
 
 #[repr(transparent)]
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -562,17 +567,4 @@ impl Permissions {
     }
 }
 
-pub struct OpenOptions(sys::FileOpenOptions);
-
-impl OpenOptions {
-    pub fn new() -> OpenOptions {
-        Self(sys::FileOpenOptions {
-            stream_override: todo!(),
-            access_mode: todo!(),
-            op_mode: todo!(),
-            blocking_mode: todo!(),
-            create_acl: todo!(),
-            extended_options: todo!(),
-        })
-    }
-}
+pub struct DirEntry(OwnedFile);

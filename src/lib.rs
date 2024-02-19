@@ -17,6 +17,8 @@ pub mod io;
 #[cfg(feature = "api")]
 pub mod kstr;
 #[cfg(feature = "api")]
+pub mod os;
+#[cfg(feature = "api")]
 pub mod process;
 #[cfg(feature = "api")]
 pub mod random;
@@ -27,3 +29,6 @@ pub mod security;
 
 #[cfg(feature = "api")]
 pub mod time;
+
+#[cfg(feature = "api")]
+pub mod thread;

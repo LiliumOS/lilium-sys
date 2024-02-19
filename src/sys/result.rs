@@ -1,7 +1,7 @@
 /// The Integer Type that is the same size as a machine word.
 pub type SysResult = core::ffi::c_long;
 
-mod nonzero {
+mod detail {
     use core::num::*;
     pub trait Scalar {
         type NonZeroTy;
@@ -35,7 +35,7 @@ mod nonzero {
 }
 
 /// The NonZeroI* type that corresponds to `SysResult`
-pub type NonZeroSysResult = nonzero::NonZeroSysResult;
+pub type NonZeroSysResult = detail::NonZeroSysResult;
 
 pub mod errors {
     macro_rules! error_def{
@@ -48,4 +48,28 @@ pub mod errors {
             error_def!{$file}
         }
     }
+}
+
+#[macro_export]
+macro_rules! sys_try {
+    ($e:expr) => {{
+        let val: $crate::sys::result::SysResult = $e;
+
+        if val < 0 {
+            return val;
+        }
+        val
+    }};
+}
+
+#[macro_export]
+macro_rules! sys_try_nonzero {
+    ($e:expr) => {{
+        let val: $crate::sys::result::NonZeroSysResult = $e;
+
+        if val.get() < 0 {
+            return val.into();
+        }
+        val
+    }};
 }

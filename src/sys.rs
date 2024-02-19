@@ -1,7 +1,5 @@
 //! Low-level interfaces to Lilium
 
-#![deny(missing_docs)]
-
 pub mod debug;
 pub mod device;
 pub mod fs;

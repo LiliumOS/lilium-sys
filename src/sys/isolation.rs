@@ -10,12 +10,18 @@ use super::{
     result::SysResult,
 };
 
+/// A handle to an isolation namespace.
+///
+/// Isolation Namespaces allow you to run processes
 #[repr(transparent)]
 pub struct NamespaceHandle(Handle);
 
+/// Describes a device that is exposed in the new namespace
 #[repr(C)]
 pub struct IsolationDeviceDescriptor {
+    /// The device id to expose in the namespace
     pub devid: Uuid,
+    /// A handle to the device to redirect `devid` to inside the namespace, or null to pass the device through
     pub redirect_dev: HandlePtr<DeviceHandle>,
 }
 

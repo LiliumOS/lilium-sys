@@ -38,7 +38,7 @@
 //!
 
 use core::{
-    ffi::{c_long, c_void},
+    ffi::{c_long, c_ulong, c_void},
     mem::MaybeUninit,
 };
 
@@ -48,7 +48,7 @@ use super::{
     handle::{Handle, HandlePtr},
     io::IOHandle,
     ipc::IPCServerHandle,
-    kstr::{KCSlice, KStrCPtr, KStrPtr},
+    kstr::{KCSlice, KSlice, KStrCPtr, KStrPtr},
     result::SysResult,
     socket::SocketHandle,
 };
@@ -238,11 +238,23 @@ extern "C" {
     ) -> SysResult;
 
     pub fn CloseFile(hdl: HandlePtr<FileHandle>) -> SysResult;
+
+    /// Advances the directory iterator
     pub fn DirectoryNext(hdl: HandlePtr<FileHandle>, state: *mut *mut c_void) -> SysResult;
+    pub fn DirectoryStep(
+        hdl: HandlePtr<FileHandle>,
+        state: *mut *mut c_void,
+        num: c_ulong,
+    ) -> SysResult;
     pub fn DirectoryRead(
         hdl: HandlePtr<FileHandle>,
         state: *mut c_void,
         info: *mut DirectoryInfo,
+    ) -> SysResult;
+    pub fn DirectoryReadMany(
+        hdl: HandlePtr<FileHandle>,
+        state: *mut c_void,
+        info: *mut KSlice<DirectoryInfo>,
     ) -> SysResult;
 
     pub fn StreamSize(hdl: HandlePtr<FileHandle>) -> SysResult;

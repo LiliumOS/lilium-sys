@@ -3,7 +3,7 @@ use core::ffi::{c_long, c_ulong};
 use crate::uuid::Uuid;
 
 use super::{
-    handle::{Handle, HandlePtr},
+    handle::{Handle, HandlePtr, WideHandle},
     kstr::KStrCPtr,
     process::ProcessHandle,
     result::SysResult,
@@ -14,16 +14,8 @@ use super::{
 pub struct SecurityContext(Handle);
 
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct ThreadOwnerProcess {
-    pub handle: HandlePtr<ProcessHandle>,
-    #[doc(hidden)]
-    pub __padding: [u32; (16 - core::mem::size_of::<HandlePtr<ProcessHandle>>()) >> 2],
-}
-
-#[repr(C)]
 pub union ThreadOwner {
-    pub process: ThreadOwnerProcess,
+    pub process: WideHandle<ProcessHandle>,
     pub owning_principal: Uuid,
 }
 

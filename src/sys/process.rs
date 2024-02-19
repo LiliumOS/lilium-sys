@@ -1,7 +1,10 @@
 use core::ffi::{c_long, c_ulong, c_void};
+use core::mem::MaybeUninit;
 
+use crate::uuid::parse_uuid;
 use crate::{io::IOHandle, uuid::Uuid};
 
+use super::kstr::KCSlice;
 use super::{
     fs::FileHandle,
     handle::{Handle, HandlePtr},
@@ -29,7 +32,8 @@ pub const FLAG_HIDE_PROCESS: c_long = 0x10;
 /// It is an error to apply this to a privilaged process (one that has an InstallSecurityContext stream or legacy unix SUID/SGID), unless the current thread has the NoInterpPrivilaged kernel permission
 pub const FLAG_NO_INTERP: c_long = 0x20;
 
-/// Loads the given program into the current process
+/// Loads the given program into the current process, destroying the current image running in the process
+/// The [`CreateProcess`] syscall will not return succesfully, and any thread is terminated as though by [`DestroyThread`]
 pub const FLAG_REPLACE_IMAGE: c_long = 0x40;
 
 #[repr(C)]
@@ -121,16 +125,73 @@ pub struct ProcessInfo {
     pub prg_path: KStrPtr,
 }
 
+/// Creates a Readable mapping. 
+/// 
+/// Generally, a non-readable mapping cannot be created (without setting [`MAP_ATTR_RESERVE`]). 
+/// The exception is that some architectures may permit write-only or execute-only pages.
 pub const MAP_ATTR_READ: u32 = 0x01;
+/// 
 pub const MAP_ATTR_WRITE: u32 = 0x02;
 pub const MAP_ATTR_EXEC: u32 = 0x04;
 pub const MAP_ATTR_THREAD_PRIVATE: u32 = 0x08;
 pub const MAP_ATTR_PROC_PRIVATE: u32 = 0x10;
+/// Reserves (but does not allocate new physical memory or swap for) the mapping region. 
+/// This allows you to preallocate a region of memory without consuming either proper memory or the security context memory resource limit (beyond memory consumed for kernel-level data structures), until actually needed.
+/// 
+/// 
+/// Regardless of [`MAP_ATTR_READ`], [`MAP_ATTR_WRITE`], or [`MAP_ATTR_EXEC`], accesses to this region will fault (and generally terminate execution unless the program has arranged to handle the exception)
+/// 
+/// Like any other mapping, a mapping created with [`CreateMapping`] using [`MAP_ATTR_RESERVE`] will be an invalid region for other calls to [`CreateMapping`]. 
+/// To make use of part of the reserved region, use [`ChangeMappingAttributes`] on the relevant part. 
+/// 
+/// [`MAP_ATTR_RESERVE`] cannot be used with [`MAP_KIND_ENCRYPTED`]. Note that because 
+pub const MAP_ATTR_RESERVE: U32 = 0x20;
 
 pub const MAP_KIND_NORMAL: u32 = 0;
 pub const MAP_KIND_RESIDENT: u32 = 1;
 pub const MAP_KIND_SECURE: u32 = 2;
 pub const MAP_KIND_ENCRYPTED: u32 = 3;
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct MapExtendedAttrRaw {
+    pub ty: Uuid,
+    pub flags: u32,
+    #[doc(hidden)]
+    pub __pad: [u32; 3],
+    pub data: [MaybeUninit<u8>; 32],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct MapExtendedAttrBacking {
+    #[doc(hidden)]
+    pub __type_field: Uuid,
+    pub flags: u32,
+    #[doc(hidden)]
+    pub __pad: [u32; 3],
+    pub stream_base: u64,
+    pub backing_file: HandlePtr<IOHandle>,
+    #[doc(hidden)]
+    pub __pad2: [MaybeUninit<u8>; 24 - core::mem::size_of::<HandlePtr<IOHandle>>()],
+}
+
+impl MapExtendedAttrBacking {
+    pub const NULL: Self = Self {
+        __type_field: parse_uuid("294d5c4e-cdf4-53b3-bfbc-ed804526394b"),
+        flags: 0,
+        stream_base: 0,
+        backing_file: HandlePtr::null(),
+        __pad: [0; 3],
+        __pad2: [MaybeUninit::zeroed(); 24 - core::mem::size_of::<HandlePtr<IOHandle>>()],
+    };
+}
+
+#[repr(C)]
+pub union MapExtendedAttr {
+    pub raw: MapExtendedAttrRaw,
+    pub backing: MapExtendedAttrBacking,
+}
 
 #[repr(C)]
 pub struct TerminationSignalInfo {
@@ -229,21 +290,22 @@ extern "C" {
     pub fn ExitProcess(code: u32) -> !;
 
     /// Creates a new Mapping at `base_addr` if possible (if `0`, picks an address and returns it in `base_addr`), of length `page_count`, using the specified kind and attributes.
-    ///
-    /// If `backing` is specified, memory accesses perform I/O accesses starting from the Seek address of the Handle. The handle must have `CHAR_RANDOMACCESS`,
-    ///  and the validity of accesses depends on `CHAR_READABLE` and `CHAR_WRITABLE`
+    /// 
+    /// 
+    /// 
     pub fn CreateMapping(
         base_addr: *mut *mut c_void,
         page_count: c_long,
         map_attrs: u32,
         map_kind: u32,
-        backing: HandlePtr<IOHandle>,
+        map_ext: *const KCSlice<MapExtendedAttr>,
     ) -> SysResult;
 
+    /// Changes the attributes of (part)
     pub fn ChangeMappingAttributes(
         mapping_base_addr: *mut c_void,
         page_count: c_long,
-        new_map_atrs: u32,
+        new_map_attrs: u32,
     ) -> SysResult;
 
     pub fn RemoveMapping(mapping_base_addr: *mut c_void, page_count: c_long) -> SysResult;
