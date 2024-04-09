@@ -3,7 +3,7 @@ use core::str::FromStr;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C, align(16))]
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Pod, Zeroable)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Pod, Zeroable)]
 pub struct Uuid {
     pub minor: u64,
     pub major: u64,
@@ -14,6 +14,66 @@ impl FromStr for Uuid {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         try_parse_uuid(s)
+    }
+}
+
+impl core::fmt::Debug for Uuid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let minor_lo48 = self.minor & ((1 << 48) - 1);
+        let minor_hi16 = self.minor >> 48;
+        let major_lo16 = self.major & ((1 << 16) - 1);
+        let major_mid16 = (self.major >> 16) & ((1 << 16) - 1);
+        let major_hi32 = self.major >> 32;
+
+        f.write_fmt(format_args!(
+            "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+            major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
+        ))
+    }
+}
+
+impl core::fmt::Display for Uuid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let minor_lo48 = self.minor & ((1 << 48) - 1);
+        let minor_hi16 = self.minor >> 48;
+        let major_lo16 = self.major & ((1 << 16) - 1);
+        let major_mid16 = (self.major >> 16) & ((1 << 16) - 1);
+        let major_hi32 = self.major >> 32;
+
+        f.write_fmt(format_args!(
+            "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+            major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
+        ))
+    }
+}
+
+impl core::fmt::LowerHex for Uuid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let minor_lo48 = self.minor & ((1 << 48) - 1);
+        let minor_hi16 = self.minor >> 48;
+        let major_lo16 = self.major & ((1 << 16) - 1);
+        let major_mid16 = (self.major >> 16) & ((1 << 16) - 1);
+        let major_hi32 = self.major >> 32;
+
+        f.write_fmt(format_args!(
+            "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+            major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
+        ))
+    }
+}
+
+impl core::fmt::UpperHex for Uuid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let minor_lo48 = self.minor & ((1 << 48) - 1);
+        let minor_hi16 = self.minor >> 48;
+        let major_lo16 = self.major & ((1 << 16) - 1);
+        let major_mid16 = (self.major >> 16) & ((1 << 16) - 1);
+        let major_hi32 = self.major >> 32;
+
+        f.write_fmt(format_args!(
+            "{:08X}-{:04X}-{:04X}-{:04X}-{:012X}",
+            major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
+        ))
     }
 }
 

@@ -3,10 +3,13 @@ use core::{any::TypeId, mem::MaybeUninit};
 use alloc::collections::BTreeMap;
 use bytemuck::Zeroable;
 
-use crate::sys::{
-    info as sys,
-    kstr::KSlice,
-    option::{ExtendedOptionHead, OPTION_FLAG_IGNORE},
+use crate::{
+    sys::{
+        info as sys,
+        kstr::KSlice,
+        option::{ExtendedOptionHead, OPTION_FLAG_IGNORE},
+    },
+    uuid::Uuid,
 };
 
 pub trait FromRequest: Any {
@@ -15,6 +18,81 @@ pub trait FromRequest: Any {
     /// # Safety
     /// `x` must correspond to the [`SysInfoRequest`] corresponding to [`Self::REQ_ID`][FromRequest::REQ_ID] that was fulfilled.
     unsafe fn from_request(x: &sys::SysInfoRequest) -> Self;
+}
+
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+pub struct ArchInfo {
+    pub arch_id: Uuid,
+    pub version: u32,
+}
+
+impl FromRequest for ArchInfo {
+    const REQ_ID: Uuid = sys::SYSINFO_REQUEST_ARCH_INFO;
+
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+        Self {
+            arch_id: x.arch_info.arch_type,
+            version: x.arch_info.arch_version,
+        }
+    }
+}
+
+impl core::fmt::Debug for ArchInfo {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let mut st = f.debug_struct("ArchInfo");
+        match self.arch_id {
+            sys::arch_info::ARCH_TYPE_X86_64 => {
+                st.field_with("arch_id", |f| f.write_str("x86_64"))?;
+                if self.version == 0 {
+                    st.field_with("version", |f| f.write_str("x86_64"))?;
+                } else {
+                    st.field_with("version", |f| {
+                        f.write_fmt(format_args!("x86_64v{}", self.version))
+                    })?;
+                }
+            }
+            sys::arch_info::ARCH_TYPE_X86_IA_32 => {
+                st.field_with("arch_id", |f| f.write_str("ia32"))?;
+                st.field_with("version", |f| {
+                    f.write_fmt(format_args!("i{}86", self.version))
+                })?;
+            }
+            sys::arch_info::ARCH_TYPE_CLEVER_ISA => {
+                st.field_with("arch_id", |f| f.write_str("clever"))?;
+                st.field_with("version", |f| {
+                    f.write_fmt(format_args!("Clever 1.{}", self.version))
+                })?;
+            }
+            sys::arch_info::ARCH_TYPE_AARCH64 => {
+                st.field_with("arch_id", |f| f.write_str("aarch64"))?;
+                st.field("version", &self.version)?;
+            }
+            sys::arch_info::ARCH_TYPE_ARM32 => {
+                st.field_with("arch_id", |f: &mut core::fmt::Formatter<'static>| {
+                    f.write_str("arm32")
+                })?;
+                st.field("version", &self.version)?;
+            }
+            sys::arch_info::ARCH_TYPE_RISCV32 => {
+                st.field_with("arch_id", |f: &mut core::fmt::Formatter<'static>| {
+                    f.write_str("riscv32")
+                })?;
+                st.field("version", &self.version)?;
+            }
+            sys::arch_info::ARCH_TYPE_RISCV64 => {
+                st.field_with("arch_id", |f: &mut core::fmt::Formatter<'static>| {
+                    f.write_str("riscv64")
+                })?;
+                st.field("version", &self.version)?;
+            }
+            _ => {
+                st.field("arch_id", &self.arch_id)?;
+                st.field("version", &self.version)?;
+            }
+        }
+
+        st.finish()
+    }
 }
 
 pub struct RequestBuilder {
