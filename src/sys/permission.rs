@@ -101,6 +101,16 @@ extern "C" {
         value: u64,
     ) -> SysResult;
 
+    /// Gets the value of limit on a kernel (global) resource in the given security context. Note that this is the maximum value for the limit, not the current in-use value.
+    /// The Debug API can provide some of this information.
+    ///
+    /// ### Known resource limits
+    ///
+    /// The set of resource Limits supported is kernel dependant.
+    /// The following resource limit names are defined:
+    /// * `Memory`: Total virtual memory allocated for process/thread mappings
+    /// * `PhysMem`: Total physical memory allocated for process/thread mappings
+    /// * `KMemory`: Total virtual memory allocated
     pub fn GetKernelResourceLimit(
         ctx: HandlePtr<SecurityContext>,
         limit_name: KStrCPtr,

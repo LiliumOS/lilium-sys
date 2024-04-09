@@ -7,13 +7,20 @@ use core::mem::MaybeUninit;
 
 use crate::uuid::{parse_uuid, Uuid};
 
+/// The Number of bytes for the body of a [`SysInfoRequest`] - large enough to store the larger of 8 pointers and 64 bytes.
+pub const SYS_INFO_REQUEST_BODY_SIZE: usize = if core::mem::size_of::<usize> > 8 {
+    core::mem::size_of::<usize>() * 8
+} else {
+    64
+};
+
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
 pub struct SysInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
     /// The body of the request, content depends on the type.
-    pub body: [MaybeUninit<u8>; 64],
+    pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
 }
 
 /// Requests OS Version Information
@@ -58,6 +65,21 @@ pub struct SysInfoRequestArchInfo {
     pub arch_version: u32,
 }
 
+/// Requests computer name information
+#[repr(C, align(32))]
+pub struct SysInfoRequestComputerName {
+    /// The header of the request
+    pub head: ExtendedOptionHead,
+    /// The system host name
+    pub hostname: KStrPtr,
+    /// The system unique identifier
+    pub sys_id: Uuid,
+    /// The System Display Name
+    pub sys_display_name: KStrPtr,
+    /// The System Label
+    pub sys_label: KStrPtr,
+}
+
 pub mod arch_info {
     pub const ARCH_TYPE_X86_64: Uuid = parse_uuid("52aa8be1-822d-502c-8309-cf4d785ad524");
     pub const ARCH_TYPE_X86_IA_32: Uuid = parse_uuid("84d2de8d-00e5-55bd-a65c-e28a842c2778");
@@ -80,12 +102,14 @@ pub union SysInfoRequest {
     pub os_version: SysInfoRequestOsVersion,
     pub kernel_vendor: SysInfoRequestKernelVendor,
     pub arch_info: SysInfoRequestArchInfo,
+    pub computer_name: SysInfoRequestComputerName,
     pub unknown: SysInfoRequestUnknown,
 }
 
 pub const SYSINFO_REQUEST_OSVER: Uuid = parse_uuid("22c479ab-c119-58d5-9c1e-fa03ddf9426a");
 pub const SYSINFO_REQUEST_KVENDOR: Uuid = parse_uuid("01adbfd8-3b43-5115-9abd-5b2974375358");
 pub const SYSINFO_REQUEST_ARCH_INFO: Uuid = parse_uuid("416eed18-85ca-53c9-849f-4b54bb0568b7");
+pub const SYSINFO_REQUEST_COMPUTER_NAME: Uuid = parse_uuid("82b314fe-0476-51ca-99de-bbd9711403cf");
 
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
@@ -110,5 +134,4 @@ extern "system" {
     /// * [`SYSINFO_REQUEST_ARCH_INFO`] - requests general processor architecture information
     ///
     pub fn GetSystemInfo(reqs: KSlice<SysInfoRequest>) -> SysResult;
-
 }

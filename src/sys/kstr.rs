@@ -20,6 +20,19 @@ impl KStrCPtr {
             len: 0,
         }
     }
+
+    /// # Safety
+    ///
+    /// As `str_ptr` and `len` fields are public,
+    /// it is your responsibility to ensure that they refer to a correct `str` slice that outlives the return value.
+    pub unsafe fn as_str(&self) -> &str {
+        unsafe {
+            core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+                self.str_ptr.cast(),
+                self.len as usize,
+            ))
+        }
+    }
 }
 
 #[repr(C)]
@@ -40,6 +53,22 @@ impl KStrPtr {
         KStrCPtr {
             str_ptr: self.str_ptr,
             len: self.len,
+        }
+    }
+
+    /// # Safety
+    ///
+    /// As `str_ptr` and `len` fields are public,
+    /// it is your responsibility to ensure that they refer to a correct `str` slice that outlives the return value.
+    ///
+    /// Note that, after any syscall that returns successfully, a [`KStrPtr`] passed to the syscall will be initialized to valid UTF-8, and set the length field to the length of the valid string
+    /// (at most the length of the buffer indicated by the kernel).
+    pub unsafe fn as_str(&self) -> &str {
+        unsafe {
+            core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+                self.str_ptr.cast(),
+                self.len as usize,
+            ))
         }
     }
 }

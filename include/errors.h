@@ -28,7 +28,12 @@
 /// * A pointer argument referred to a valid mapping but the operation to be performed was invalid on memory in that mapping (i.e. a write operation to a read-only page, or trying to execute a non-executable page)
 /// * A pointer argument has an alignment constraint that was violated, and this error is detected by the kernel. 
 /// * A pointer argument is valid for fewer bytes than was expected, and this error was detected by the kernel.
-/// * A pointer argument referred to valid memory that is reserved for the kernel (such as memory being modified by an asynchronous IO operation)
+/// * A pointer argument referred to valid memory that is reserved for the kernel (such as memory being modified by an asynchronous IO operation), and this error was detected by the kernel.
+///
+/// Checks for alignment, validity, reservation (for handles or userspace memory reserved for the kernel) are a best effort basis.
+/// The kernel generally does not know the precise extent of memory validity and can only be granular to the page boundary.
+/// As such, it is possible for a pointer to exceed the bounds of an object it is intended to point into without this error being detected by the kernel,
+/// Such an operation causes userspace undefined behaviour
 #define INVALID_MEMORY (-3)
 /// An attempt was made to perform an operation on an object that is busy or otherwise cannot be acquired.
 #define BUSY (-4)
@@ -39,20 +44,39 @@
 #define INVALID_STRING (-6)
 /// An operation expected a mutable string or slice, but the length field indicated fewer elements then the operation attempted to write.
 /// The length field is updated to the expected length and the operation may be retried after extending the available memory accordinly
+///
+/// When this error is returned, and the syscall accepts multiple mutable strings or slices, the behaviour is kernel and syscall dependant, but is either:
+/// * The function stops processing immediately after setting the length field for the failing string, and no further strings are modified,
+/// * The function continues processing up to a certain number of failures (which can be unbounded), and updates at least all string/slices with insufficient length fields.
+/// 
+/// The function typically does not report how many insufficient length fields were updated in total.
+///
+/// Regardless of the failure behaviour, if multiple mutable strings/slices are encountered,
+/// the order they are checked and updated for insufficient length conditions is not specified
 #define INSUFFICIENT_LENGTH (-7)
 /// A thread attempted to acquire a resource but its active security context imposes a limit on that resource that has been exhausted by threads sharing the limit.
 #define RESOURCE_LIMIT_EXHAUSTED (-8)
 /// An operation was performed on an object that is an incorrect state for that operation, or an argument was in an invalid state for the operation
 #define INVALID_STATE (-9)
 /// An extended option specifier was provided to an operation that was invalid, for example:
-/// * The option has a unrecognized type, and the option was not marked as optional
+/// * The option has a unrecognized type, and the option was not marked as ignorable
 /// * The option sets any reserved (undefined) flag bits
 /// * Any reserved field of the option header is not set to 0
 #define INVALID_OPTION (-10)
 
 /// An operation was performed that required allocating memory for either the process or the kernel, and the allocation failed for a reason other than a specified resource limit, such as:
 /// * The available physical memory on the system is exhausted and insufficient memory could be reacquired for the process,
+/// * The available virtual memory region the kernel attempted to allocate for a resource was full,
+/// * Allocation for any page tables used to allocate virtual memory failed (note that this cause in particular may be the result of exhausting the threads `AllocateThreadKMem` resource limit)
 #define INSUFFICIENT_MEMORY (-11)
+
+/// Indicates that a system call number is invalid/unrecognized by the kernel, a system call operation is not supported in the current kernel build configuration, 
+/// or platform restrictions prevented performing a given system call
+/// 
+/// This differs from `INVALID_OPERATION` in that it specifically detects issues with the SCI function itself, rather than a specific operation requested to be performed by the SCI function.
+///
+/// Note that some cases of platform restrictions may return `INVALID_OPERATION` instead.
+#define UNSUPPORTED_KERNEL_FUNCTION (-12)
 
 /// An enumeration operation was performed, but the enumeration state indicates a finished enumeration operation.
 #define FINISHED_ENUMERATE (-32)
