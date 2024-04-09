@@ -127,28 +127,12 @@ pub const OP_NO_ACCESS: u32 = 0x04;
 
 pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 
-/// Flag that indicates
-
-/// The Header of a [`FileOpenOption`]
-#[repr(C, align(32))]
-#[derive(Copy, Clone, bytemuck::Zeroable)]
-pub struct FileOptionHead {
-    /// The type of the option
-    pub ty: Uuid,
-    /// Flags for the option.
-    /// The following bits are defined:
-    /// * Bit 0 ([`OPTION_FLAG_OPTIONAL`]): If set, the kernel may ignore the option if the type is not recognized. Otherwise must error with [`INVALID_OPTION`][`lilium_sys::sys::result::error::INVALID_OPTION`]
-    pub flags: u32,
-    #[doc(hidden)]
-    pub __reserved: [u32; 3],
-}
-
 /// An option for opening the file
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
 pub struct UnknownFileOpenOption {
     /// The header
-    pub head: FileOptionHead,
+    pub head: ExtendedOptionHead,
     /// The tail
     pub tail: [MaybeUninit<u8>; 64],
 }
@@ -156,7 +140,7 @@ pub struct UnknownFileOpenOption {
 #[repr(C, align(32))]
 pub union FileOpenOption {
     /// The Header: Must be present on all subfields
-    pub head: FileOptionHead,
+    pub head: ExtendedOptionHead,
     /// Fallback type for all fields
     pub unknown: UnknownFileOpenOption,
 }

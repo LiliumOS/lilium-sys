@@ -12,17 +12,19 @@
 //!  and the handle.
 //! Using a handle of the wrong type to perform an action (except when the type the handle is used as is a supertype of the specific handle type), an `INVALID_HANDLE` error is returned by the system call.
 //!
-//! Handles may have attached permissions or capabilities, which determine the actions a handle may perform. These permissions belong to the handle itself.
+//! Handles may have attached permissions or capabilities, which determine the actions a handle may perform, known as rights. These permissions belong to the handle itself.
 //! Not all handles have associated permissions, and only a limited permissions related to the object the handle refers to, such as a thread or process.
-//! Each handle type describes what permissions each handle describes.
-//! In the case of handles with standard (kernel, process, or thread) permissions, an ambient permission check occurs at the handle's creation for each attachable permission using the current thread's active security context.
+//! Each handle type describes what rights each handle has.
+//! In the case of handles with standard (kernel, process, or thread) permissions, an ambient permission check occurs at the handle's creation for each handle right using the current thread's active security context.
 //! Each permission check that succeeds attaches that permission to the handle. There will typically be methods to drop existing permissions and attach new ones to a handle.
 //!
+//! Note that if permissions aren't present on a handle, the associated action cannot be performed, *even* if the calling thread has that permission in its security context.
+//! To add or restore permissions not present on a handle, use the [`GainHandleRight`] syscall. This syscall will perform the appropriate permission check before granting the right.
 //!
 
 use core::ffi::c_ulong;
 
-use super::{process::ProcessHandle, result::SysResult};
+use super::{kstr::KStrCPtr, process::ProcessHandle, result::SysResult};
 
 /// An opaque type that represents any object referred to by a handle
 pub struct Handle(());
@@ -157,4 +159,49 @@ extern "C" {
     ) -> SysResult;
     pub fn IdentHandle(hdl: HandlePtr<Handle>) -> SysResult;
 
+    /// Validates that the handle right `right` is is present on `hdl`.
+    ///
+    /// Returns `OK` if the right is present, and `PERMISSION` if the right is not.
+    /// Note that rights that aren't defined for a handle type are valid and are treated as if they aren't present.
+    ///
+    /// ## Errors
+    ///
+    /// Returns `INVALID_HANDLE` if `hdl` is not a valid handle.
+    ///
+    /// Return `INVALID_MEMORY` if `right` does not point to valid memory.
+    /// Returns `INVALID_STRING` if `right` is not a valid UTF-8 string.
+    ///
+    /// Returns `PERMISSION` if  `hdl` does not possess the named access `right`
+    pub fn CheckHandleRight(hdl: HandlePtr<Handle>, right: KStrCPtr) -> SysResult;
+    /// Drops the specified handle right `right` from `hdl`. `hdl` can no longer perform operations associated with `right`.
+    ///
+    /// An error only occurs if the operation cannot be performed (such as being given an invalid handle, or an invalid string),
+    ///  the call will always return `OK` regardless of whether the specified `right` is present on the handle (or even is a defined permission type)
+    ///
+    /// ## Errors
+    /// Returns `INVALID_HANDLE` if `hdl` is not a valid handle.
+    ///
+    /// Return `INVALID_MEMORY` if `right` does not point to valid memory.
+    /// Returns `INVALID_STRING` if `right` is not a valid UTF-8 string.
+    pub fn DropHandleRight(hdl: HandlePtr<Handle>, right: KStrCPtr) -> SysResult;
+
+    /// Drops all rights from the specified handle
+    ///
+    /// ## Errors
+    /// Returns `INVALID_HANDLE` if `hdl` is not a valid handle.
+    pub fn DropAllHandleRights(hdl: HandlePtr<Handle>) -> SysResult;
+
+    /// Grants the specified named right to `hdl` if the current thread has the required permissions.
+    ///
+    /// The permission check is performed regardless of whether `hdl` already has the given right
+    ///
+    /// ## Errors
+    /// Returns `INVALID_HANDLE` if `hdl` is not a valid handle.
+    ///
+    /// Returns `INVALID_MEMORY` if `right` does not point to valid memory.
+    /// Returns `INVALID_STRING` if `right` is not a valid UTF-8 string.
+    ///
+    /// Returns `PERMISSION` if the thread does not have the required permission.
+    /// Returns `INVALID_OPERATION` if the specified `right` cannot be applied to the given handle.
+    pub fn GrantHandleRight(hdl: HandlePtr<Handle>, right: KStrCPtr) -> SysResult;
 }

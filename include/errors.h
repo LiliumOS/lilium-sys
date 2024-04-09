@@ -1,5 +1,15 @@
-
-// General Error codes
+//! Almost all system calls in Lilium return a `SysResult`
+//! This is a signed integer type, equal to the register width of the platform, which can either be non-negative (indicating a succesful operation),
+//!  or negative, which indicates an Error.
+//! An `OK` (0) result is the most common success result, with positive values having per-syscall meaning documented on the syscall.
+//! The negative results are divided into the 5 main lilium subsystems, and general errors.
+//! (Note that syscalls belonging to a particular subsystem are not restricted to only errors from that subsystem)
+//! 
+//! ## Error Groups
+//! When multiple error conditions are simultaneously present, which error is returned is not specified.
+//! Generally, these errors would have an effective order that prevents this (for example, a String Pointer argument that points to unmapped memory would necessarily return `INVALID_MEMORY`,
+//!  rather than `INVALID_STRING`, because the condition for `INVALID_STRING` depends on first accessing the memory)
+//! Some System calls may group multiple errors together, such that errors in all previous groups are reported before any errors in subsequent groups
 
 /// Operation failed due to insufficient permissions
 #define PERMISSION (-1)

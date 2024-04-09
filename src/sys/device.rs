@@ -2,6 +2,11 @@
 //!
 //! Device operations belong to subsystem 2 (io subsystem)
 //!
+//! ### Handle Rights
+//!
+//! [`DeviceHandle`]s are a type of [`IOHandle`]. All access rights for [`IOHandle`]s apply to [`DeviceHandle`]s.
+//! Additionally, seven access rights apply specifically to [`DeviceHandle`]s, which correspond to ACL permission checks on the Device's ACL:
+//! * `MOUNT_FILESYSTEM`: Allows using the [`MountDevice`] system call
 
 use core::ffi::{c_long, c_ulong, c_void};
 
@@ -96,6 +101,8 @@ extern "C" {
     ///
     /// If `ns` is specified, then the device is created inside that namespace only. Otherwise, the device is created in the device scope of the current thread.
     ///
+    /// The returned device handle has full rights to the device (absent any basic [`IOHandle`] rights not present on `backing_hdl`), regardless of the ACL.
+    ///
     /// ## Errors
     ///
     /// If `backing_hdl` is not a valid `IOHandle`, returns `INVALID_HANDLE`.
@@ -112,6 +119,7 @@ extern "C" {
     /// If `id` is set to an explicit ID, and that id is already in use by a device within the device scope of the specified namespace, returns `ALREADY_EXISTS`.
     ///
     pub fn CreateBlockDevice(
+        dev: *mut HandlePtr<DeviceHandle>,
         id: *mut Uuid,
         backing_hdl: HandlePtr<IOHandle>,
         cfg: *const BlockDeviceConfiguration,

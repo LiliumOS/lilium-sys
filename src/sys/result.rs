@@ -1,4 +1,4 @@
-/// The Integer Type that is the same size as a machine word.
+/// The signed Integer Type that is the same size as a machine word.
 pub type SysResult = core::ffi::c_long;
 
 mod detail {
@@ -37,16 +37,18 @@ mod detail {
 /// The NonZeroI* type that corresponds to `SysResult`
 pub type NonZeroSysResult = detail::NonZeroSysResult;
 
-pub mod errors {
-    macro_rules! error_def{
-        {$($(#[$meta:meta])* #define $name:ident $val:expr)* } => {
+macro_rules! error_def{
+    {$(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:expr)* } => {
+        $(#[$outer_meta])*
+        pub mod errors{
             $($(#[$meta])* pub const $name: super::SysResult = $val;)*
         }
+
     }
-    with_builtin_macros::with_builtin! {
-        let $file = include_from_root!("include/errors.h") in {
-            error_def!{$file}
-        }
+}
+with_builtin_macros::with_builtin! {
+    let $file = include_from_root!("include/errors.h") in {
+        error_def!{$file}
     }
 }
 

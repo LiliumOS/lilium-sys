@@ -32,3 +32,6 @@ pub mod time;
 
 #[cfg(feature = "api")]
 pub mod thread;
+
+#[cfg(feature = "api")]
+pub mod info;

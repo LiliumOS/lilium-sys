@@ -2,12 +2,15 @@
 
 pub mod debug;
 pub mod device;
+pub mod except;
 pub mod fs;
 pub mod handle;
+pub mod info;
 pub mod io;
 pub mod ipc;
 pub mod isolation;
 pub mod kstr;
+pub mod option;
 pub mod permission;
 pub mod process;
 pub mod random;
