@@ -36,24 +36,24 @@ pub union ClockOffset {
 ///
 /// Any process can read from this clock, provided they have the READ_CLOCK_OFFSET kernel permision.
 ///
-/// The precision of this clock is unspecified, but is at least 0.001 seconds.
+/// The [precision][GetClockGranularity] of this clock is unspecified, but is at least 0.001 seconds.
 pub const CLOCK_EPOCH: Uuid = parse_uuid("c8baabaf-b534-3fa1-929e-6177713e93f4");
 
 /// A Clock that tracks monotonically increasing time from an unspecified point.
 /// This clock satisfies three properties:
 /// 1. Within a process, given two successive reads from the monotonic clock device (where a *happens-before* relationship is established), the later read from the clock will yield a greater or equal
 ///  offset than the earlier read.
-/// 2. Within a process, the clock advances at a stable granularity relative to wall clock time
+/// 2. Within a process, the clock advances at a stable granularity relative to wall clock time (that is, successive reads from [`CLOCK_MONOTONIC`] will advance at least at the same rate as successive reads from [`CLOCK_EPOCH`] provided the latter is never [Reset][ResetClockOffset])
 /// 3. The epoch is temporally before (but not strictly before) any read of the current offset within a process (That is, all calls to `GetClockOffset` will return a positive value or `0`)
 ///
-/// These guarantees only hold with respect to calls to `GetClockOffset` within a given process, and are not guaranteed to hold interprocess.
+/// These guarantees only hold with respect to calls to [`GetClockOffset`] within a given process, and are not guaranteed to hold interprocess.
 /// In particular, the order of offsets returned from calls in two different processes are unrelated.
 ///
-/// This clock may not be modified by a thread. Attempting to do so via `ResetClockOffset` returns INVALID_OPERATION.
+/// This clock may not be modified by a thread. Attempting to do so via [`ResetClockOffset`] returns INVALID_OPERATION.
 ///
-/// Any process can read from this clock, provided they have the READ_CLOCK_OFFSET kernel permision.
+/// Any thread can read from this clock, provided they have the READ_CLOCK_OFFSET kernel permision.
 ///
-/// The precision o this clock is unspecified, but shall be at least as precise as `CLOCK_EPOCH`.
+/// The precision of this clock is unspecified, but shall be at least as precise as [`CLOCK_EPOCH`].
 pub const CLOCK_MONOTONIC: Uuid = parse_uuid("df95f5b1-bbb7-3562-8c7a-6c3ce0a5dd95");
 
 extern "C" {

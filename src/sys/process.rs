@@ -125,27 +125,27 @@ pub struct ProcessInfo {
     pub prg_path: KStrPtr,
 }
 
-/// Creates a Readable mapping. 
-/// 
-/// Generally, a non-readable mapping cannot be created (without setting [`MAP_ATTR_RESERVE`]). 
+/// Creates a Readable mapping.
+///
+/// Generally, a non-readable mapping cannot be created (without setting [`MAP_ATTR_RESERVE`]).
 /// The exception is that some architectures may permit write-only or execute-only pages.
 pub const MAP_ATTR_READ: u32 = 0x01;
-/// 
+///
 pub const MAP_ATTR_WRITE: u32 = 0x02;
 pub const MAP_ATTR_EXEC: u32 = 0x04;
 pub const MAP_ATTR_THREAD_PRIVATE: u32 = 0x08;
 pub const MAP_ATTR_PROC_PRIVATE: u32 = 0x10;
-/// Reserves (but does not allocate new physical memory or swap for) the mapping region. 
+/// Reserves (but does not allocate new physical memory or swap for) the mapping region.
 /// This allows you to preallocate a region of memory without consuming either proper memory or the security context memory resource limit (beyond memory consumed for kernel-level data structures), until actually needed.
-/// 
-/// 
+///
+///
 /// Regardless of [`MAP_ATTR_READ`], [`MAP_ATTR_WRITE`], or [`MAP_ATTR_EXEC`], accesses to this region will fault (and generally terminate execution unless the program has arranged to handle the exception)
-/// 
-/// Like any other mapping, a mapping created with [`CreateMapping`] using [`MAP_ATTR_RESERVE`] will be an invalid region for other calls to [`CreateMapping`]. 
-/// To make use of part of the reserved region, use [`ChangeMappingAttributes`] on the relevant part. 
-/// 
-/// [`MAP_ATTR_RESERVE`] cannot be used with [`MAP_KIND_ENCRYPTED`]. Note that because 
-pub const MAP_ATTR_RESERVE: U32 = 0x20;
+///
+/// Like any other mapping, a mapping created with [`CreateMapping`] using [`MAP_ATTR_RESERVE`] will be an invalid region for other calls to [`CreateMapping`].
+/// To make use of part of the reserved region, use [`ChangeMappingAttributes`] on the relevant part.
+///
+/// [`MAP_ATTR_RESERVE`] cannot be used with [`MAP_KIND_ENCRYPTED`]. Note that because
+pub const MAP_ATTR_RESERVE: u32 = 0x20;
 
 pub const MAP_KIND_NORMAL: u32 = 0;
 pub const MAP_KIND_RESIDENT: u32 = 1;
@@ -290,9 +290,9 @@ extern "C" {
     pub fn ExitProcess(code: u32) -> !;
 
     /// Creates a new Mapping at `base_addr` if possible (if `0`, picks an address and returns it in `base_addr`), of length `page_count`, using the specified kind and attributes.
-    /// 
-    /// 
-    /// 
+    ///
+    ///
+    ///
     pub fn CreateMapping(
         base_addr: *mut *mut c_void,
         page_count: c_long,

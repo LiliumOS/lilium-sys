@@ -6,15 +6,20 @@ use core::{marker::PhantomData, mem::MaybeUninit, ops::Deref};
 
 use private::Sealed;
 
-use crate::sys::{
-    debug::{DebugDetach, DebugHandle},
-    device::DeviceHandle,
-    fs::FileHandle,
-    handle::{self as sys, HandlePtr},
-    io::{CloseIOStream, IOHandle},
-    permission::{DestroySecurityContext, SecurityContext},
-    thread::{DetachThread, ThreadHandle},
+use crate::{
+    sys::{
+        debug::{DebugDetach, DebugHandle},
+        device::DeviceHandle,
+        fs::FileHandle,
+        handle::{self as sys, HandlePtr},
+        io::{CloseIOStream, IOHandle},
+        permission::{DestroySecurityContext, SecurityContext},
+        thread::{DetachThread, ThreadHandle},
+    },
+    thread::TlsKey,
 };
+
+use crate::result::{Error, Result};
 
 pub trait HandleType: Sized + Sealed {
     unsafe fn destroy(ptr: HandlePtr<Self>);
@@ -49,19 +54,19 @@ impl HandleType for SecurityContext {
 
 impl HandleType for IOHandle {
     unsafe fn destroy(ptr: HandlePtr<Self>) {
-        CloseIOStream(ptr)
+        CloseIOStream(ptr);
     }
 }
 
 impl HandleType for FileHandle {
     unsafe fn destroy(ptr: HandlePtr<Self>) {
-        CloseIOStream(ptr.cast())
+        CloseIOStream(ptr.cast());
     }
 }
 
 impl HandleType for DeviceHandle {
     unsafe fn destroy(ptr: HandlePtr<Self>) {
-        CloseIOStream(ptr.cast())
+        CloseIOStream(ptr.cast());
     }
 }
 
@@ -199,11 +204,11 @@ unsafe impl<'a, T> AsHandle<'a, T> for BorrowedHandle<'a, T> {
     }
 }
 
-pub struct SharedHandle<T>(sys::SharedHandle, TlsKey<HandlePtr<T>>);
+pub struct SharedHandle<T>(sys::SharedHandlePtr, TlsKey<HandlePtr<T>>);
 
 impl<T: HandleType> SharedHandle<T> {
     pub fn share(file: OwnedHandle<T>) -> Result<Self> {
-        let loc = TlsKey::try_alloc()?;
+        let loc = TlsKey::<HandlePtr<T>>::try_alloc()?;
 
         let hdl = file.0;
 
@@ -215,7 +220,7 @@ impl<T: HandleType> SharedHandle<T> {
         let shared = unsafe { shared.assume_init() };
 
         unsafe {
-            loc.get().write(bare_hdl);
+            loc.get().write(hdl);
         }
 
         Ok(Self(shared, loc))

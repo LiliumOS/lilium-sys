@@ -76,7 +76,7 @@ cfg_if::cfg_if! {
         fn get_tls_ptr_impl(key: isize) -> *mut (){
             let ret;
 
-            unsafe{asm!("lea {ptr}, fs:[{ptr}]", inout(reg) key=>ret), options(readonly, nostack, preserves_flags)}
+            unsafe{core::arch::asm!("lea {ptr}, fs:[{ptr}]", ptr = inout(reg) key=>ret, options(readonly, nostack, preserves_flags))}
 
             ret
         }
@@ -85,7 +85,7 @@ cfg_if::cfg_if! {
         fn get_tls_ptr_impl(key: isize) -> *mut (){
             let ret;
 
-            unsafe{asm!("lea {ptr:e}, fs:[{ptr}]", inout(reg) key=>ret), options(readonly, nostack, preserves_flags)}
+            unsafe{core::arch::asm!("lea {ptr:e}, fs:[{ptr:e}]", ptr = inout(reg) key=>ret), options(readonly, nostack, preserves_flags)}
 
             ret
         }

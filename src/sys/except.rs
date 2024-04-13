@@ -1,10 +1,15 @@
-use core::ffi::{c_ulong, c_void};
-use std::thread::Thread;
+use core::{
+    ffi::{c_ulong, c_void},
+    mem::MaybeUninit,
+};
 
 use crate::uuid::Uuid;
 
 use super::{
-    handle::Handle, kstr::KCSlice, option::ExtendedOptionHead, result::NonZeroSysResult,
+    handle::{Handle, HandlePtr},
+    kstr::KCSlice,
+    option::ExtendedOptionHead,
+    result::{NonZeroSysResult, SysResult},
     thread::ThreadHandle,
 };
 
@@ -61,10 +66,10 @@ extern "system" {
         except_handler: Option<ExceptHandler>,
         opts: *const KCSlice<ExceptHandlerOption>,
     ) -> SysResult;
-    pub fn ExceptHandleSynchronous(ptr: *const ExceptInfo) -> SysResult;
+    pub fn ExceptHandleSynchronous(ptr: *const ExceptionInfo) -> SysResult;
     pub fn ExceptRaiseAsynchronous(
         hdl: HandlePtr<ThreadHandle>,
-        ptr: *const ExceptInfo,
+        ptr: *const ExceptionInfo,
     ) -> SysResult;
 
     /// Load all registers from the given context (which is then released) and resumes execution at `code_addr`
@@ -75,7 +80,7 @@ extern "system" {
 
     /// Sets a register in the context. The value is the same size as a machine word
     /// regno is the same as for [`DebugWriteRegister`][super::debug::DebugWriteRegister]. Debug and Task registers cannot be modified.
-    /// 
+    ///
     /// Despite the name, regno is not limited to registers considered "General Purpose" on the architecture. Rather, GPR refers to the size of the value (at most the word size),
     /// as thevalue of the register is passed inline.
     pub fn ExceptSetGPR(
@@ -86,8 +91,8 @@ extern "system" {
 
     /// Sets a register in the context to the value of a pointer. The value is the same size as a machine word
     /// regno is the same as for [`DebugWriteRegister`][super::debug::DebugWriteRegister]. Debug and Task registers cannot be modified.
-    /// 
-    /// `value` is the value itself, represented as a pointer. It is not read or written to by this function. 
+    ///
+    /// `value` is the value itself, represented as a pointer. It is not read or written to by this function.
     /// [`INVALID_MEMORY`][crate::sys::result::errors::INVALID_MEMORY] is not returned by this function.
     pub fn ExceptSetPointerReg(
         ctx: HandlePtr<ExceptionContextHandle>,

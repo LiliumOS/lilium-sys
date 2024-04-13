@@ -1,16 +1,15 @@
-use core::ffi::{c_char, c_ulong};
-
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct KStrCPtr {
-    pub str_ptr: *const c_char,
-    pub len: c_ulong,
+    pub str_ptr: *const u8,
+    pub len: usize,
 }
 
 impl KStrCPtr {
     pub const fn from_str(st: &str) -> Self {
         KStrCPtr {
-            str_ptr: st.as_ptr() as *const c_char,
-            len: st.len() as c_ulong,
+            str_ptr: st.as_ptr() as *const u8,
+            len: st.len() as usize,
         }
     }
 
@@ -36,9 +35,10 @@ impl KStrCPtr {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct KStrPtr {
-    pub str_ptr: *mut c_char,
-    pub len: c_ulong,
+    pub str_ptr: *mut u8,
+    pub len: usize,
 }
 
 impl KStrPtr {
@@ -76,7 +76,7 @@ impl KStrPtr {
 #[repr(C)]
 pub struct KCSlice<T> {
     pub arr_ptr: *const T,
-    pub len: c_ulong,
+    pub len: usize,
 }
 
 impl<T> KCSlice<T> {
@@ -90,7 +90,7 @@ impl<T> KCSlice<T> {
     pub const fn from_slice(sl: &[T]) -> KCSlice<T> {
         Self {
             arr_ptr: sl.as_ptr(),
-            len: sl.len() as c_ulong,
+            len: sl.len() as usize,
         }
     }
 }
@@ -98,7 +98,7 @@ impl<T> KCSlice<T> {
 #[repr(C)]
 pub struct KSlice<T> {
     pub arr_ptr: *mut T,
-    pub len: c_ulong,
+    pub len: usize,
 }
 
 impl<T> KSlice<T> {
@@ -112,7 +112,7 @@ impl<T> KSlice<T> {
     pub fn from_slice_mut(sl: &mut [T]) -> KSlice<T> {
         Self {
             arr_ptr: sl.as_mut_ptr(),
-            len: sl.len() as c_ulong,
+            len: sl.len() as usize,
         }
     }
 }

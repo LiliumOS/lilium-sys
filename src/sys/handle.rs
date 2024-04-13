@@ -24,7 +24,7 @@
 
 use core::ffi::c_ulong;
 
-use super::{kstr::KStrCPtr, process::ProcessHandle, result::SysResult};
+use super::{kstr::KStrCPtr, result::SysResult};
 
 /// An opaque type that represents any object referred to by a handle
 pub struct Handle(());

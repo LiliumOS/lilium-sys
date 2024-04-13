@@ -1,6 +1,7 @@
 use super::{
     kstr::{KSlice, KStrPtr},
     option::ExtendedOptionHead,
+    result::SysResult,
 };
 
 use core::mem::MaybeUninit;
@@ -8,7 +9,7 @@ use core::mem::MaybeUninit;
 use crate::uuid::{parse_uuid, Uuid};
 
 /// The Number of bytes for the body of a [`SysInfoRequest`] - large enough to store the larger of 8 pointers and 64 bytes.
-pub const SYS_INFO_REQUEST_BODY_SIZE: usize = if core::mem::size_of::<usize> > 8 {
+pub const SYS_INFO_REQUEST_BODY_SIZE: usize = if core::mem::size_of::<usize>() > 8 {
     core::mem::size_of::<usize>() * 8
 } else {
     64
@@ -16,6 +17,7 @@ pub const SYS_INFO_REQUEST_BODY_SIZE: usize = if core::mem::size_of::<usize> > 8
 
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct SysInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
@@ -25,6 +27,7 @@ pub struct SysInfoRequestUnknown {
 
 /// Requests OS Version Information
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct SysInfoRequestOsVersion {
     /// The Header of the request
     pub head: ExtendedOptionHead,
@@ -38,6 +41,7 @@ pub struct SysInfoRequestOsVersion {
 
 /// Requests Kernel Vendor Name
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct SysInfoRequestKernelVendor {
     /// The Header of the request
     pub head: ExtendedOptionHead,
@@ -53,6 +57,7 @@ pub struct SysInfoRequestKernelVendor {
 
 /// Requests Global Architecture Info
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct SysInfoRequestArchInfo {
     /// The Header of the request
     pub head: ExtendedOptionHead,
@@ -67,6 +72,7 @@ pub struct SysInfoRequestArchInfo {
 
 /// Requests computer name information
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct SysInfoRequestComputerName {
     /// The header of the request
     pub head: ExtendedOptionHead,
@@ -81,6 +87,7 @@ pub struct SysInfoRequestComputerName {
 }
 
 pub mod arch_info {
+    use crate::uuid::{parse_uuid, Uuid};
     pub const ARCH_TYPE_X86_64: Uuid = parse_uuid("52aa8be1-822d-502c-8309-cf4d785ad524");
     pub const ARCH_TYPE_X86_IA_32: Uuid = parse_uuid("84d2de8d-00e5-55bd-a65c-e28a842c2778");
     pub const ARCH_VERSION_X86_IA_32_386: u32 = 3;
@@ -96,7 +103,21 @@ pub mod arch_info {
 }
 
 #[repr(C, align(32))]
-#[non_exhaustive]
+#[derive(Copy, Clone)]
+pub struct SysInfoRequestPhysicalInfo {
+    /// The header of the request
+    pub head: ExtendedOptionHead,
+    /// The number of physical cores accross all active processors
+    pub physical_core_count: u32,
+    /// The number of logical cores (threads)
+    /// May be different if the processor supports hyperthreading or shared-state parallelism
+    pub logical_core_count: u32,
+    /// The number of physically installed discrete Processors
+    pub discrete_processor_count: u32,
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub union SysInfoRequest {
     pub head: ExtendedOptionHead,
     pub os_version: SysInfoRequestOsVersion,
@@ -113,11 +134,19 @@ pub const SYSINFO_REQUEST_COMPUTER_NAME: Uuid = parse_uuid("82b314fe-0476-51ca-9
 
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct ProcInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
     /// The body of the request, content depends on the type.
-    pub body: [MaybeUninit<u8>; 64],
+    pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub union ProcInfoRequest {
+    pub head: ExtendedOptionHead,
+    pub unknown: ProcInfoRequestUnknown,
 }
 
 extern "system" {

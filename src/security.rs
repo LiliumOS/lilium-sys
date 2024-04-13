@@ -11,7 +11,7 @@ use crate::{handle::*, result::Error, sys::permission::*};
 bitflags::bitflags! {
     #[repr(transparent)]
     #[derive(Copy, Clone, Hash, PartialEq, Debug)]
-    pub struct PermissionStatus : core::ffi::c_long{
+    pub struct PermissionStatus : isize{
         const ALLOWED = 0x01;
         const INHERITABLE = 0x02;
         const RECOVERABLE = 0x04;
@@ -93,6 +93,4 @@ impl HandleRef<SecurityContext> {
         Error::from_code(status)?;
         Ok(PermissionStatus::from_bits_retain(status))
     }
-
-    
 }

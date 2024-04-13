@@ -19,6 +19,9 @@ impl FromStr for Uuid {
 
 impl core::fmt::Debug for Uuid {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if f.alternate() {
+            f.write_str("{")?;
+        }
         let minor_lo48 = self.minor & ((1 << 48) - 1);
         let minor_hi16 = self.minor >> 48;
         let major_lo16 = self.major & ((1 << 16) - 1);
@@ -28,12 +31,20 @@ impl core::fmt::Debug for Uuid {
         f.write_fmt(format_args!(
             "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
             major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
-        ))
+        ))?;
+
+        if f.alternate() {
+            f.write_str("}")?;
+        }
+        Ok(())
     }
 }
 
 impl core::fmt::Display for Uuid {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if f.alternate() {
+            f.write_str("{")?;
+        }
         let minor_lo48 = self.minor & ((1 << 48) - 1);
         let minor_hi16 = self.minor >> 48;
         let major_lo16 = self.major & ((1 << 16) - 1);
@@ -43,12 +54,20 @@ impl core::fmt::Display for Uuid {
         f.write_fmt(format_args!(
             "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
             major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
-        ))
+        ))?;
+
+        if f.alternate() {
+            f.write_str("}")?;
+        }
+        Ok(())
     }
 }
 
 impl core::fmt::LowerHex for Uuid {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if f.alternate() {
+            f.write_str("{")?;
+        }
         let minor_lo48 = self.minor & ((1 << 48) - 1);
         let minor_hi16 = self.minor >> 48;
         let major_lo16 = self.major & ((1 << 16) - 1);
@@ -58,12 +77,20 @@ impl core::fmt::LowerHex for Uuid {
         f.write_fmt(format_args!(
             "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
             major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
-        ))
+        ))?;
+
+        if f.alternate() {
+            f.write_str("}")?;
+        }
+        Ok(())
     }
 }
 
 impl core::fmt::UpperHex for Uuid {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if f.alternate() {
+            f.write_str("{")?;
+        }
         let minor_lo48 = self.minor & ((1 << 48) - 1);
         let minor_hi16 = self.minor >> 48;
         let major_lo16 = self.major & ((1 << 16) - 1);
@@ -73,7 +100,12 @@ impl core::fmt::UpperHex for Uuid {
         f.write_fmt(format_args!(
             "{:08X}-{:04X}-{:04X}-{:04X}-{:012X}",
             major_hi32, major_mid16, major_lo16, minor_hi16, minor_lo48
-        ))
+        ))?;
+
+        if f.alternate() {
+            f.write_str("}")?;
+        }
+        Ok(())
     }
 }
 

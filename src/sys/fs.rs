@@ -34,6 +34,7 @@
 //! Most functions in the `fs` interface take a resolution base handle. If set to null, this uses the current directory. Otherwise, it must be a handle opened in `OP_DIRECTORY_ACCESS` mode, or an error occurs.
 //! In both cases, the physical path is resolved physically against this, if it is relative (Does not start with a `/`)
 //!
+//! A path that starts with `//` (two adjacent separators) is reserved. This is a prefix designator - the root component follows the prefix designator and cannot be removed by `..` logical components
 //!
 //!
 
@@ -49,6 +50,7 @@ use super::{
     io::IOHandle,
     ipc::IPCServerHandle,
     kstr::{KCSlice, KSlice, KStrCPtr, KStrPtr},
+    option::ExtendedOptionHead,
     result::SysResult,
     socket::SocketHandle,
 };
@@ -294,7 +296,7 @@ extern "C" {
         acl: HandlePtr<FileHandle>,
     ) -> SysResult;
 
-    /// Creates and opens a directory in an existing directory that does not alias with any other filesystem object, and cannot be named by any other program.
+    /// Creates and opens a directory in an existing directory that does not alias with any other filesystem object, and cannot be named by any other thread.
     /// `resolutionbase` determines the behaviour of path traversals that use `..` to resolve directories outside of the created directory. It also may be used to determine the filesystem the object is created on
     /// If no `resolutionbase` is given, the current resolution base directory is used instead.
     ///
@@ -324,10 +326,13 @@ extern "C" {
     ///
     /// Returns UNSUPPORTED_OPERATION is the filesystem does not support anonymous directories.
     ///
+    /// Returns `INVALID_OPTION` if any extended option specified by `options` is invalid.
+    ///
     pub fn CreatePrivateDirectory(
         dir_handle: *mut HandlePtr<FileHandle>,
         resolutionbase: HandlePtr<FileHandle>,
         acl: HandlePtr<FileHandle>,
+        options: *const KCSlice<FileOpenOption>,
     ) -> SysResult;
 
     pub fn CreateHardLink(

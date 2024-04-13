@@ -1,4 +1,7 @@
-use core::{any::TypeId, mem::MaybeUninit};
+use core::{
+    any::{Any, TypeId},
+    mem::MaybeUninit,
+};
 
 use alloc::collections::BTreeMap;
 use bytemuck::Zeroable;
@@ -33,9 +36,9 @@ pub trait FromRequest: Any {
     ///
     /// `x` must be a valid [`SysInfoRequest`][sys::SysInfoRequest] corresponding to [`Self::REQ_ID`][FromRequest::REQ_ID].
     unsafe fn find_strings<'a, 'b>(
-        x: &'a sys::SysInfoRequest,
-        init_arr: &'b mut [Option<&'a KStrPtr>],
-    ) -> &'b [&'a KStrPtr];
+        x: &'a mut sys::SysInfoRequest,
+        init_arr: &'b mut [Option<&'a mut KStrPtr>],
+    ) -> &'b mut [&'a mut KStrPtr];
 
     /// # Safety
     /// `x` must be a valid [`SysInfoRequest`][sys::SysInfoRequest] corresponding to [`Self::REQ_ID`][FromRequest::REQ_ID] that was fulfilled,
@@ -56,14 +59,12 @@ impl FromRequest for OsVersion {
     const REQ_ID: Uuid = sys::SYSINFO_REQUEST_OSVER;
 
     unsafe fn find_strings<'a, 'b>(
-        x: &'a sys::SysInfoRequest,
-        init_arr: &'b mut [Option<&'a KStrPtr>],
-    ) -> &'b [&'a KStrPtr] {
-        init_arr[0] = Some(&x.os_version.osvendor_name);
+        x: &'a mut sys::SysInfoRequest,
+        init_arr: &'b mut [Option<&'a mut KStrPtr>],
+    ) -> &'b mut [&'a mut KStrPtr] {
+        init_arr[0] = Some(&mut x.os_version.osvendor_name);
 
-        unsafe {
-            core::slice::from_raw_parts(init_arr as *mut Option<&'a KStrPtr> as *mut &'a KStrPtr, 1)
-        }
+        unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1) }
     }
 
     unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
@@ -96,14 +97,12 @@ impl FromRequest for KernelVendor {
     const REQ_ID: Uuid = sys::SYSINFO_REQUEST_KVENDOR;
 
     unsafe fn find_strings<'a, 'b>(
-        x: &'a sys::SysInfoRequest,
-        init_arr: &'b mut [Option<&'a KStrPtr>],
-    ) -> &'b [&'a KStrPtr] {
-        init_arr[0] = Some(&x.kernel_vendor.kvendor_name);
+        x: &'a mut sys::SysInfoRequest,
+        init_arr: &'b mut [Option<&'a mut KStrPtr>],
+    ) -> &'b mut [&'a mut KStrPtr] {
+        init_arr[0] = Some(&mut x.kernel_vendor.kvendor_name);
 
-        unsafe {
-            core::slice::from_raw_parts(init_arr as *mut Option<&'a KStrPtr> as *mut &'a KStrPtr, 1)
-        }
+        unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1) }
     }
 
     unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
@@ -115,7 +114,7 @@ impl FromRequest for KernelVendor {
             ..
         } = x.kernel_vendor;
 
-        let vendor = kvendor_name.as_const().to_string();
+        let vendor = kvendor_name.as_str().to_string();
 
         Self {
             vendor,
@@ -136,10 +135,10 @@ impl FromRequest for ArchInfo {
     const REQ_ID: Uuid = sys::SYSINFO_REQUEST_ARCH_INFO;
 
     unsafe fn find_strings<'a, 'b>(
-        x: &'a sys::SysInfoRequest,
-        init_arr: &'b mut [Option<&'a KStrPtr>],
-    ) -> &'b [&'a KStrPtr] {
-        &[]
+        _: &'a mut sys::SysInfoRequest,
+        _: &'b mut [Option<&'a mut KStrPtr>],
+    ) -> &'b mut [&'a mut KStrPtr] {
+        &mut []
     }
 
     unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
@@ -152,55 +151,51 @@ impl FromRequest for ArchInfo {
 
 impl core::fmt::Debug for ArchInfo {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        struct StrNoEscape<'a>(&'a str);
+
+        impl<'a> core::fmt::Debug for StrNoEscape<'a> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.write_str(self.0)
+            }
+        }
+
         let mut st = f.debug_struct("ArchInfo");
         match self.arch_id {
             sys::arch_info::ARCH_TYPE_X86_64 => {
-                st.field_with("arch_id", |f| f.write_str("x86_64"))?;
+                st.field("arch_id", &StrNoEscape("x86_64"));
                 if self.version == 0 {
-                    st.field_with("version", |f| f.write_str("x86_64"))?;
+                    st.field("version", &StrNoEscape("x86_64"));
                 } else {
-                    st.field_with("version", |f| {
-                        f.write_fmt(format_args!("x86_64v{}", self.version))
-                    })?;
+                    st.field("version", &format_args!("x86_64v{}", self.version));
                 }
             }
             sys::arch_info::ARCH_TYPE_X86_IA_32 => {
-                st.field_with("arch_id", |f| f.write_str("ia32"))?;
-                st.field_with("version", |f| {
-                    f.write_fmt(format_args!("i{}86", self.version))
-                })?;
+                st.field("arch_id", &StrNoEscape("ia32"));
+                st.field("version", &format_args!("i{}86", self.version));
             }
             sys::arch_info::ARCH_TYPE_CLEVER_ISA => {
-                st.field_with("arch_id", |f| f.write_str("clever"))?;
-                st.field_with("version", |f| {
-                    f.write_fmt(format_args!("Clever 1.{}", self.version))
-                })?;
+                st.field("arch_id", &StrNoEscape("clever"));
+                st.field("version", &format_args!("Clever 1.{}", self.version));
             }
             sys::arch_info::ARCH_TYPE_AARCH64 => {
-                st.field_with("arch_id", |f| f.write_str("aarch64"))?;
-                st.field("version", &self.version)?;
+                st.field("arch_id", &StrNoEscape("aarch64"));
+                st.field("version", &self.version);
             }
             sys::arch_info::ARCH_TYPE_ARM32 => {
-                st.field_with("arch_id", |f: &mut core::fmt::Formatter<'static>| {
-                    f.write_str("arm32")
-                })?;
-                st.field("version", &self.version)?;
+                st.field("arch_id", &StrNoEscape("arm"));
+                st.field("version", &self.version);
             }
             sys::arch_info::ARCH_TYPE_RISCV32 => {
-                st.field_with("arch_id", |f: &mut core::fmt::Formatter<'static>| {
-                    f.write_str("riscv32")
-                })?;
-                st.field("version", &self.version)?;
+                st.field("arch_id", &StrNoEscape("riscv32"));
+                st.field("version", &self.version);
             }
             sys::arch_info::ARCH_TYPE_RISCV64 => {
-                st.field_with("arch_id", |f: &mut core::fmt::Formatter<'static>| {
-                    f.write_str("riscv64")
-                })?;
-                st.field("version", &self.version)?;
+                st.field("arch_id", &StrNoEscape("riscv64"));
+                st.field("version", &self.version);
             }
             _ => {
-                st.field("arch_id", &self.arch_id)?;
-                st.field("version", &self.version)?;
+                st.field("arch_id", &self.arch_id);
+                st.field("version", &self.version);
             }
         }
 
@@ -219,18 +214,16 @@ pub struct ComputerName {
 impl FromRequest for ComputerName {
     const REQ_ID: Uuid = sys::SYSINFO_REQUEST_COMPUTER_NAME;
     unsafe fn find_strings<'a, 'b>(
-        x: &'a sys::SysInfoRequest,
-        init_arr: &'b mut [Option<&'a KStrPtr>],
-    ) -> &'b [&'a KStrPtr] {
-        let req = &x.computer_name;
+        x: &'a mut sys::SysInfoRequest,
+        init_arr: &'b mut [Option<&'a mut KStrPtr>],
+    ) -> &'b mut [&'a mut KStrPtr] {
+        let req = &mut x.computer_name;
 
-        init_arr[0] = Some(&req.hostname);
-        init_arr[1] = Some(&req.sys_display_name);
-        init_arr[2] = Some(&req.sys_label);
+        init_arr[0] = Some(&mut req.hostname);
+        init_arr[1] = Some(&mut req.sys_display_name);
+        init_arr[2] = Some(&mut req.sys_label);
 
-        unsafe {
-            core::slice::from_raw_parts(init_arr as *mut Option<&'a KStrPtr> as *mut &'a KStrPtr, 3)
-        }
+        unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 3) }
     }
 
     unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
@@ -257,7 +250,7 @@ impl FromRequest for ComputerName {
 
 pub struct RequestBuilder {
     requests: Vec<sys::SysInfoRequest>,
-    strings: Vec<(StringIndex, Vec<i8>)>,
+    strings: Vec<(StringIndex, Vec<u8>)>,
     impls: BTreeMap<TypeId, (usize, fn(*mut (), &sys::SysInfoRequest))>,
 }
 
@@ -282,36 +275,30 @@ impl RequestBuilder {
                 },
             };
 
-            let mut storage_buffer = [None; 4];
+            let mut storage_buffer = [None, None, None, None];
 
-            let strings = unsafe { T::find_strings(&req, &mut storage_buffer) };
+            let addr = core::ptr::addr_of!(req).addr();
 
-            for &str in strings {
-                let offset = core::ptr::addr_of!(str)
-                    .addr()
-                    .wrapping_sub(core::ptr::addr_of!(req).addr());
+            let strings = unsafe { T::find_strings(&mut req, &mut storage_buffer) };
 
-                if offset > 64 {
-                    panic!("Wrong index of string. {} attempted to designate string at address {:p} ({} bytes away from ")
+            for str in strings {
+                let offset = core::ptr::addr_of!(*str).addr().wrapping_sub(addr);
+
+                if offset > 96 {
+                    panic!("Wrong index of string. {} attempted to designate string at address {:p} ({} bytes away from the base of the request)", core::any::type_name::<T>(), str as *mut _, offset as isize)
                 }
 
-                let index = StringIndex((idx << 6) | offset);
+                let index = StringIndex((idx << 6) | (offset - 32));
                 // Most SysRequests will return up to 32 bytes, so this is a reasonable base address
                 let mut vec = Vec::with_capacity(32);
-
-                let st = unsafe {
-                    &mut *core::ptr::addr_of_mut!(req)
-                        .cast::<u8>()
-                        .add(offset)
-                        .cast::<KStrPtr>()
-                };
-                st.len = 32;
-                st.str_ptr = vec.as_mut_ptr();
+                str.len = 32;
+                str.str_ptr = vec.as_mut_ptr();
                 self.strings.push((index, vec));
             }
 
             self.requests.push(req);
-            let ctor_fn = |ptr, req| unsafe { ptr.cast::<T>().write(T::from_request(req)) };
+            let ctor_fn: fn(*mut (), &sys::SysInfoRequest) =
+                |ptr, req| unsafe { ptr.cast::<T>().write(T::from_request(req)) };
 
             self.impls.insert(id, (idx, ctor_fn));
         }
@@ -322,48 +309,45 @@ impl RequestBuilder {
         let id = TypeId::of::<T>();
         if !self.impls.contains_key(&id) {
             let idx = self.requests.len() | (1 << (usize::BITS - 1));
-            self.requests.push(sys::SysInfoRequest {
+            let mut req = sys::SysInfoRequest {
                 head: ExtendedOptionHead {
                     ty: T::REQ_ID,
                     flags: OPTION_FLAG_IGNORE,
                     ..Zeroable::zeroed()
                 },
-            });
+            };
 
-            let mut storage_buffer = [None; 4];
+            let mut storage_buffer = [None, None, None, None];
 
-            let strings = unsafe { T::find_strings(&req, &mut storage_buffer) };
+            let addr = core::ptr::addr_of!(req).addr();
 
-            for &str in strings {
-                let offset = core::ptr::addr_of!(str)
-                    .addr()
-                    .wrapping_sub(core::ptr::addr_of!(req).addr());
+            let strings = unsafe { T::find_strings(&mut req, &mut storage_buffer) };
 
-                if offset > 64 {
-                    panic!("Wrong index of string. {} attempted to designate string at address {:p} ({} bytes away from ")
+            for str in strings {
+                let offset = core::ptr::addr_of!(*str).addr().wrapping_sub(addr);
+
+                if offset > 96 {
+                    panic!("Wrong index of string. {} attempted to designate string at address {:p} ({} bytes away from the base of the request)", core::any::type_name::<T>(), str as *mut _, offset as isize)
                 }
 
-                let index = StringIndex((idx << 6) | offset);
+                let index = StringIndex((idx << 6) | (offset - 32));
                 // Most SysRequests will return up to 32 bytes, so this is a reasonable base address
                 let mut vec = Vec::with_capacity(32);
-
-                let st = unsafe {
-                    &mut *core::ptr::addr_of_mut!(req)
-                        .cast::<u8>()
-                        .add(offset)
-                        .cast::<KStrPtr>()
-                };
-                st.len = 32;
-                st.str_ptr = vec.as_mut_ptr();
+                str.len = 32;
+                str.str_ptr = vec.as_mut_ptr();
                 self.strings.push((index, vec));
             }
 
-            let ctor_fn = |ptr, req| unsafe {
+            let ctor_fn: fn(*mut (), &sys::SysInfoRequest) = |ptr, req| unsafe {
                 // Check if the kernel/USI impl has unset the ignore flag, indicating that the request has been fulfilled
                 if (req.head.flags & OPTION_FLAG_IGNORE) == 0 {
                     ptr.cast::<Option<T>>().write(Some(T::from_request(req)));
+                } else {
+                    ptr.cast::<Option<T>>().write(None)
                 }
             };
+
+            self.requests.push(req);
 
             self.impls.insert(id, (idx, ctor_fn));
         }
@@ -373,7 +357,7 @@ impl RequestBuilder {
     pub fn resolve(self) -> crate::result::Result<RequestResults> {
         let Self {
             mut requests,
-            strings,
+            mut strings,
             impls,
         } = self;
 
@@ -384,7 +368,7 @@ impl RequestBuilder {
                 crate::result::Error::InsufficientLength => {
                     let mut work_done = false;
 
-                    for (offset, string) in &mut self.strings {
+                    for (offset, string) in &mut strings {
                         let (index, offset) = offset.into_parts();
 
                         let st = unsafe {
@@ -421,7 +405,7 @@ impl RequestBuilder {
 #[derive(Clone)]
 pub struct RequestResults {
     requests: Vec<sys::SysInfoRequest>,
-    strings: Vec<(StringIndex, Vec<i8>)>,
+    strings: Vec<(StringIndex, Vec<u8>)>,
     impls: BTreeMap<TypeId, (usize, fn(*mut (), &sys::SysInfoRequest))>,
 }
 
@@ -444,7 +428,7 @@ impl RequestResults {
             )
         }
 
-        let mut buf = MaybeUninit::uninit();
+        let mut buf = MaybeUninit::<T>::uninit();
 
         ctor_fn(buf.as_mut_ptr().cast(), &self.requests[idx]);
 
@@ -466,7 +450,7 @@ impl RequestResults {
             panic!("Attempted to obtain results from optional request `{}`, but that request was not marked optional", core::any::type_name::<T>())
         }
 
-        let mut buf = MaybeUninit::uninit();
+        let mut buf = MaybeUninit::<Option<T>>::uninit();
 
         ctor_fn(buf.as_mut_ptr().cast(), &self.requests[idx]);
 

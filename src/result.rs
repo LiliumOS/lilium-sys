@@ -1,19 +1,21 @@
+use crate::sys::result::SysResult;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 macro_rules! error_def{
-    {$(#![outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:pat)* } => {
+    {$(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:pat)* } => {
         paste::paste!{
             #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
-            $(#[outer_meta])*
+            $(#[$outer_meta])*
             pub enum Error{
-                Unknown(core::ffi::c_long),
+                Unknown(SysResult),
                 $($(#[$meta])* [<$name:camel>]),*
             }
 
             impl Error{
-                pub const fn from_code(code: core::ffi::c_long) -> Result<()>{
+                pub const fn from_code(code: SysResult) -> Result<()>{
                     match code{
-                        0..=<core::ffi::c_long>::MAX => Ok(()),
+                        0..=<SysResult>::MAX => Ok(()),
                         $($val => Err(Self::[<$name:camel>]),)*
                         x => Err(Self::Unknown(x))
                     }
