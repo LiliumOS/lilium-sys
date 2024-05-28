@@ -22,7 +22,7 @@ use super::{
     handle::{Handle, HandlePtr},
     io::IOHandle,
     isolation::NamespaceHandle,
-    kstr::{KStrCPtr, KStrPtr},
+    kstr::{KCSlice, KStrCPtr, KStrPtr},
     result::SysResult,
 };
 
@@ -74,7 +74,6 @@ pub const MOUNT_ALLOW_PRIVILAGED: u32 = 0x02;
 pub const MOUNT_REPLACE_LEGACY_PERMISSIONS: u32 = 0x04;
 
 /// Specifies options for [`MountFilesystem`]
-
 #[repr(C)]
 pub struct MountOptions {
     /// The default ACL to use if the filesystem does not support permissions or where replacement is required
@@ -84,6 +83,22 @@ pub struct MountOptions {
     /// If the filesystem uses legacy permissions (or supports only posix acls, rather than enhanced dacls), then use this principal map given to map to Lilium principals.
     /// The IOHandle must have `CHAR_READ` and `CHAR_SEEK`. If it does not have `CHAR_RANDOMACCESS` then the behaviour is undefined if the thread calls `IOSeek`, or performs an I/O operation on the handle.
     pub legacy_principal_map: HandlePtr<IOHandle>,
+}
+
+/// Checks whether the feature supports read operations (such as obtaining the offset of a clock device, or polling a random device)
+///
+/// ## Notes
+///
+/// When checking the `BasicIo` feature, this does not take handle capabilities into account.
+pub const DEVICE_FEATURE_OPTION_READ: u32 = 0x01;
+/// Checks whether the feature supports write operations (such as resetting a clock device, or reseeding a random device)
+pub const DEVICE_FEATURE_OPTION_WRITE: u32 = 0x02;
+/// Skip performing access control checks for this feature
+pub const DEVICE_FEATURE_OPTION_IGNORE_AC: u32 = 0x8000;
+#[repr(C)]
+pub struct DeviceFeature {
+    pub feature_name: KStrCPtr,
+    pub feature_options: u32,
 }
 
 #[allow(improper_ctypes)]
@@ -223,5 +238,23 @@ extern "C" {
         callback_stack: *mut c_void,
         sigtys: *const DeviceCommandParameter,
         param_count: c_ulong,
+    ) -> SysResult;
+
+    /// Tests whether `hdl` supports the specified features,
+    ///
+    /// ## Errprs
+    ///
+    /// Returns `INVALID_HANDLE` if `hdl` is not a valid device Handle
+    ///
+    /// Returns `INVALID_MEMORY` if any pointer in `features` is null or invalid.
+    ///
+    /// Returns `UNSUPPORTED_OPERATION` if any of the named features in `features` is not supported by the device designated by `hdl`.
+    ///
+    /// Returns `INVALID_OPERATION` if any of the named features in `features` are supported, but not in the requested mode(s).
+    ///
+    /// Returns `PERMISSION` if any of the named features in `features` are Access Controlled and the Access Control checks are not marked as ignorable for that feature, the required right is not present in the handle, and permission is denied to the calling thread to obtain the required right.
+    pub fn TestDeviceFeature(
+        hdl: HandlePtr<DeviceHandle>,
+        features: *const KCSlice<DeviceFeature>,
     ) -> SysResult;
 }

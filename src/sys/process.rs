@@ -1,10 +1,14 @@
 use core::ffi::{c_long, c_ulong, c_void};
 use core::mem::MaybeUninit;
 
+use bytemuck::Zeroable;
+
 use crate::uuid::parse_uuid;
 use crate::{io::IOHandle, uuid::Uuid};
 
+use super::except::ExceptionStatusInfo;
 use super::kstr::KCSlice;
+use super::option::ExtendedOptionHead;
 use super::{
     fs::FileHandle,
     handle::{Handle, HandlePtr},
@@ -144,7 +148,7 @@ pub const MAP_ATTR_PROC_PRIVATE: u32 = 0x10;
 /// Like any other mapping, a mapping created with [`CreateMapping`] using [`MAP_ATTR_RESERVE`] will be an invalid region for other calls to [`CreateMapping`].
 /// To make use of part of the reserved region, use [`ChangeMappingAttributes`] on the relevant part.
 ///
-/// [`MAP_ATTR_RESERVE`] cannot be used with [`MAP_KIND_ENCRYPTED`]. Note that because
+/// [`MAP_ATTR_RESERVE`] cannot be used with [`MAP_KIND_ENCRYPTED`].
 pub const MAP_ATTR_RESERVE: u32 = 0x20;
 
 pub const MAP_KIND_NORMAL: u32 = 0;
@@ -155,48 +159,52 @@ pub const MAP_KIND_ENCRYPTED: u32 = 3;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct MapExtendedAttrRaw {
-    pub ty: Uuid,
-    pub flags: u32,
-    #[doc(hidden)]
-    pub __pad: [u32; 3],
+    pub header: ExtendedOptionHead,
     pub data: [MaybeUninit<u8>; 32],
 }
 
-#[repr(C)]
+#[repr(C, align(32))]
 #[derive(Copy, Clone)]
 pub struct MapExtendedAttrBacking {
-    #[doc(hidden)]
-    pub __type_field: Uuid,
-    pub flags: u32,
-    #[doc(hidden)]
-    pub __pad: [u32; 3],
+    pub header: ExtendedOptionHead,
     pub stream_base: u64,
     pub backing_file: HandlePtr<IOHandle>,
-    #[doc(hidden)]
-    pub __pad2: [MaybeUninit<u8>; 24 - core::mem::size_of::<HandlePtr<IOHandle>>()],
 }
 
 impl MapExtendedAttrBacking {
     pub const NULL: Self = Self {
-        __type_field: parse_uuid("294d5c4e-cdf4-53b3-bfbc-ed804526394b"),
-        flags: 0,
+        header: ExtendedOptionHead {
+            ty: parse_uuid("294d5c4e-cdf4-53b3-bfbc-ed804526394b"),
+            ..ExtendedOptionHead::ZERO
+        },
         stream_base: 0,
         backing_file: HandlePtr::null(),
-        __pad: [0; 3],
-        __pad2: [MaybeUninit::zeroed(); 24 - core::mem::size_of::<HandlePtr<IOHandle>>()],
     };
 }
 
-#[repr(C)]
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct MapExtendedAttrName {
+    pub header: ExtendedOptionHead,
+    pub mapping_name: KStrCPtr,
+}
+
+impl MapExtendedAttrName {
+    pub const NULL: Self = Self {
+        header: ExtendedOptionHead {
+            ty: parse_uuid("90ded1b2-ba85-5d34-90b4-74e717444863"),
+            ..ExtendedOptionHead::ZERO
+        },
+        mapping_name: KStrCPtr::empty(),
+    };
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub union MapExtendedAttr {
     pub raw: MapExtendedAttrRaw,
     pub backing: MapExtendedAttrBacking,
-}
-
-#[repr(C)]
-pub struct TerminationSignalInfo {
-    pub signo: u32,
-    pub is_thread_signal: bool,
+    pub mapping_name: MapExtendedAttrName,
 }
 
 #[allow(improper_ctypes)]
@@ -246,6 +254,11 @@ extern "C" {
         hdl: *mut HandlePtr<ProcessHandle>,
     ) -> SysResult;
 
+    /// Causes the process designated by `hdl` to terminate, as though it recieved an unmanaged exception with code `79a90b8e-8f4b-5134-8aa2-ff68877017db` (RemoteStop)
+    ///
+    ///
+    pub fn TerminateProcess(hdl: HandlePtr<ProcessHandle>) -> SysResult;
+
     ///
     /// Enumerates over the list of processes on the system
     pub fn EnumerateProcesses(hdl: *mut HandlePtr<EnumerateProcessHandle>, flags: u32)
@@ -271,14 +284,14 @@ extern "C" {
     /// If the process is terminated by a call to `ExitProcess` or by `ExitThread` called from the main thread,
     ///  returns that value exactly.
     ///
-    /// If the process was terminated by a signal, returns SIGNALED and sets `*termsiginfo` to information about the signal that caused termination.
+    /// If the process was terminated by an unmanaged exception, returns SIGNALED and sets `*termsiginfo` to information about the exception that caused the termination.
     ///
     /// If the process was terminated because the main thread was terminated by a call to `DestroyThread`, returns `KILLED`.
     ///
     ///
     pub fn JoinProcess(
         hdl: HandlePtr<ProcessHandle>,
-        termsiginfo: *mut TerminationSignalInfo,
+        termsiginfo: *mut ExceptionStatusInfo,
     ) -> SysResult;
 
     /// Detaches the given process from the handle

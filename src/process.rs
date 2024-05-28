@@ -25,6 +25,7 @@ use alloc::{
     vec::Vec,
 };
 
+use crate::sys::except::{ExceptionInfo, ExceptionStatusInfo};
 use crate::{
     fs::{Path, PathBuf},
     handle::{AsHandle, BorrowedHandle},
@@ -68,30 +69,24 @@ pub struct Command<'a> {
     _handles: PhantomData<BorrowedHandle<'a, Handle>>,
 }
 
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
-pub enum CommandStatus {
-    Normal(i32),
-    Abnormal(u32),
-    Killed,
-}
-
 struct CommandResult {
     hdl: HandlePtr<ProcessHandle>,
 }
 
 impl CommandResult {
     fn join(self) -> crate::result::Result<CommandStatus> {
-        let mut sigterminfo = MaybeUninit::uninit();
-        let ret = unsafe { crate::sys::process::JoinProcess(self.hdl, sigterminfo.as_mut_ptr()) };
+        let mut sigterminfo = MaybeUninit::zeroed();
         loop {
+            let ret =
+                unsafe { crate::sys::process::JoinProcess(self.hdl, sigterminfo.as_mut_ptr()) };
             match crate::result::Error::from_code(ret) {
                 Ok(()) => break Ok(CommandStatus::Normal(ret as i32)), // Note: Lilium guarantees it will be a positive i32
-                Err(crate::result::Error::Killed) => break Ok(CommandStatus::Killed),
                 Err(crate::result::Error::Signaled) => {
-                    break Ok(CommandStatus::Abnormal(
-                        unsafe { sigterminfo.assume_init() }.signo,
-                    ))
+                    break Ok(CommandStatus::UnmanagedException(unsafe {
+                        sigterminfo.assume_init()
+                    }))
                 }
+                Err(crate::result::Error::Killed) => break Ok(CommandStatus::Killed),
                 Err(crate::result::Error::Interrupted) => continue,
                 Err(crate::result::Error::Timeout) => {
                     unsafe { crate::sys::thread::ClearBlockingTimeout() };
@@ -139,6 +134,7 @@ impl Command<'_> {
     }
 
     unsafe fn spawn_replace_image(&mut self) -> crate::result::Result<!> {
+        self.flags |= ProcessStartFlags::REPLACE_IMAGE;
         self.spawn_with_result().map(|_| debug_unreachable())
     }
 }
@@ -223,4 +219,121 @@ impl<'a> Command<'a> {
 pub struct ProcessIterator {
     hdl: HandlePtr<EnumerateProcessHandle>,
     state: *mut c_void,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum CommandStatus {
+    Normal(i32),
+    UnmanagedException(ExceptionStatusInfo),
+    Killed,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct ExitStatus(CommandStatus);
+
+impl ExitStatus {
+    pub fn exit_ok(&self) -> core::result::Result<(), ExitStatusError> {
+        if matches!(self.0, CommandStatus::Normal(0)) {
+            Ok(())
+        } else {
+            Err(ExitStatusError(self.0))
+        }
+    }
+
+    pub fn success(&self) -> bool {
+        matches!(self.0, CommandStatus::Normal(0))
+    }
+}
+
+impl ExitStatus {
+    pub fn throw_except(&self) -> crate::result::Result<()> {
+        if let CommandStatus::UnmanagedException(except) = &self.0 {
+            crate::result::Error::from_code(unsafe {
+                crate::sys::except::ExceptHandleSynchronous(except, core::ptr::null())
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn exit_code(&self) -> Option<i32> {
+        if let &CommandStatus::Normal(status) = &self.0 {
+            Some(status)
+        } else {
+            None
+        }
+    }
+
+    pub fn exception(&self) -> Option<&ExceptionStatusInfo> {
+        if let CommandStatus::UnmanagedException(except) = &self.0 {
+            Some(except)
+        } else {
+            None
+        }
+    }
+
+    pub fn killed(&self) -> bool {
+        matches!(self.0, CommandStatus::Killed)
+    }
+
+    pub fn abnormal(&self) -> bool {
+        matches!(
+            self.0,
+            CommandStatus::Killed | CommandStatus::UnmanagedException(_)
+        )
+    }
+}
+
+impl Default for ExitStatus {
+    fn default() -> Self {
+        Self(CommandStatus::Normal(0))
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct ExitStatusError(CommandStatus);
+
+impl ExitStatusError {
+    pub fn throw_except(&self) -> crate::result::Result<()> {
+        if let CommandStatus::UnmanagedException(except) = &self.0 {
+            crate::result::Error::from_code(unsafe {
+                crate::sys::except::ExceptHandleSynchronous(except, core::ptr::null())
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn exit_code(&self) -> Option<i32> {
+        if let &CommandStatus::Normal(status) = &self.0 {
+            Some(status)
+        } else {
+            None
+        }
+    }
+
+    pub fn exception(&self) -> Option<&ExceptionStatusInfo> {
+        if let CommandStatus::UnmanagedException(except) = &self.0 {
+            Some(except)
+        } else {
+            None
+        }
+    }
+
+    pub fn killed(&self) -> bool {
+        matches!(self.0, CommandStatus::Killed)
+    }
+
+    pub fn abnormal(&self) -> bool {
+        matches!(
+            self.0,
+            CommandStatus::Killed | CommandStatus::UnmanagedException(_)
+        )
+    }
+}
+
+impl From<ExitStatusError> for ExitStatus {
+    fn from(value: ExitStatusError) -> Self {
+        ExitStatus(value.0)
+    }
 }

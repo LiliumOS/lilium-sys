@@ -18,3 +18,11 @@ pub struct ExtendedOptionHead {
 
 /// Indicates that the option may be safely ignored by the kernel if it does not implement the type of the option.
 pub const OPTION_FLAG_IGNORE: u32 = 0x00000001;
+
+impl ExtendedOptionHead {
+    pub const ZERO: ExtendedOptionHead = ExtendedOptionHead {
+        ty: Uuid::NIL,
+        flags: 0,
+        __reserved: [0; 3],
+    };
+}

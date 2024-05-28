@@ -118,12 +118,34 @@ pub struct SysInfoRequestPhysicalInfo {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+pub struct SysInfoRequestAddressSpace {
+    /// The header of the request
+    pub head: ExtendedOptionHead,
+    /// The Minimum Virtual address that a userspace program can allocate,
+    pub min_mapping_addr: usize,
+    /// The Maximum Virtual Address that a userspace program can allocate
+    pub max_mapping_addr: usize,
+    /// The Page Granularity
+    pub page_size: usize,
+}
+
+/// Option struct for obtaining information about the kernel
+///
+/// Additional extended option flags:
+/// * Bit 16: `SYSINFO_REQUEST_FLAG_SKIP` - used by USI impls to indicate that the kernel should treat the request as unrecognized. Must be set together with [`OPTION_FLAG_IGNORE`][super::option::OPTION_FLAG_IGNORE].
+///   This bit should not be set by users, and does not have an associated constant. USI impls are not required to request this flag for requests it fulfills, and may clear it when set by the user.
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub union SysInfoRequest {
     pub head: ExtendedOptionHead,
     pub os_version: SysInfoRequestOsVersion,
     pub kernel_vendor: SysInfoRequestKernelVendor,
     pub arch_info: SysInfoRequestArchInfo,
     pub computer_name: SysInfoRequestComputerName,
+    pub processor_info: SysInfoRequestPhysicalInfo,
+    pub addr_space: SysInfoRequestAddressSpace,
+    /// Allows querying information about processors common to all CPUs.
+    pub common_processor_info: ProcInfoRequest,
     pub unknown: SysInfoRequestUnknown,
 }
 
@@ -142,11 +164,31 @@ pub struct ProcInfoRequestUnknown {
     pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
 }
 
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+mod x86;
+
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+pub use x86::ProcInfoArchRequest;
+
+#[cfg(any(target_arch = "clever"))]
+mod clever;
+
+#[cfg(any(target_arch = "clever"))]
+pub use clever::ProcInfoArchRequest;
+
+#[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "clever")))]
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub union ProcInfoArchRequest {
+    unknown: ProcInfoRequestUnknown,
+}
+
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
 pub union ProcInfoRequest {
     pub head: ExtendedOptionHead,
     pub unknown: ProcInfoRequestUnknown,
+    pub arch: ProcInfoArchRequest,
 }
 
 extern "system" {
@@ -163,4 +205,6 @@ extern "system" {
     /// * [`SYSINFO_REQUEST_ARCH_INFO`] - requests general processor architecture information
     ///
     pub fn GetSystemInfo(reqs: KSlice<SysInfoRequest>) -> SysResult;
+
+    pub fn GetProcessorInfo(proc_id: u32, reqs: KSlice<ProcInfoRequest>) -> SysResult;
 }

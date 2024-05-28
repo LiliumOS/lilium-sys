@@ -101,7 +101,7 @@ unsafe impl Sync for SharedHandlePtr {}
 
 /// A Handle that is 16 bytes in size, regardless of the size of [`HandlePtr<T>`].
 /// The excess (padding) bytes must be initialized to `0`.
-#[repr(C)]
+#[repr(C, align(16))]
 pub struct WideHandle<T> {
     /// The handle stored by the [`WideHandle<T>`]. This is guaranteed to be at offset 0 of the struct.
     pub handle: HandlePtr<T>,

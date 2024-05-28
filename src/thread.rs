@@ -28,15 +28,14 @@ impl<T> Eq for TlsKey<T> {}
 
 impl<T> core::fmt::Debug for TlsKey<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("TlsKey")
-            .field_with(|f| f.write_fmt(format_args!("{:p}", self.0 as *mut T)))
+        f.debug_tuple("TlsKey").field(&(self.0 as *mut T)).finish()
     }
 }
 
 impl<T> core::fmt::Pointer for TlsKey<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("TlsKey")
-            .field_with(|f| f.write_fmt(format_args!("{:p}", self.0 as *mut T)))
+        f.write_str("tls:")?;
+        (self.0 as *mut T).fmt(f)
     }
 }
 
@@ -52,9 +51,7 @@ impl<T> TlsKey<T> {
             unsafe { sys::tls_alloc_dyn_aligned(size, align) }
         };
 
-        if key == 0 {
-            Err(Error::InsufficientMemory)
-        }
+        Error::from_code(key)?;
 
         Ok(Self(key, PhantomData))
     }
@@ -67,6 +64,10 @@ impl<T> TlsKey<T> {
 
     pub fn get(&self) -> *mut T {
         get_tls_ptr_impl(self.0).cast()
+    }
+
+    pub unsafe fn dealloc(self) {
+        sys::tls_free_dyn(self.0)
     }
 }
 

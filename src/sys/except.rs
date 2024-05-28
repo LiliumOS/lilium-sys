@@ -17,13 +17,21 @@ use super::{
 pub struct ExceptionContextHandle(Handle);
 
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct ExceptionInfo {
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct ExceptionStatusInfo {
     pub except_code: Uuid,
+    pub except_info: u64,
+    pub except_reason: u64,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct ExceptionInfo {
+    pub status: ExceptionStatusInfo,
     pub except_sys_used: *mut c_void,
-    pub except_data_ref: *mut c_void,
     pub last_exception_info: *const ExceptionInfo,
-    pub chain_buffer: *const c_ulong,
+    pub except_data_ref: *mut c_void,
+    pub except_data_size: usize,
     pub trigger_code_addr: *mut c_void,
     pub trigger_code_stack_head: *mut c_void,
 }
@@ -61,15 +69,32 @@ pub type ExceptHandler =
 
 #[allow(improper_ctypes)]
 extern "system" {
+
+    /// Aborts the calling thread by reporting  `except` as having been recieved but not handled
+    ///
+    ///
+    /// ## Default Behaviour
+    ///
+    /// Except for certain exceptions, which are specially recognized by the kernel to do something else,
+    /// If no [`ExceptHandler`] is installed (or calling the [`ExceptHandler`] triggers an exception) when a thread recieves an exception,
+    ///  the thread is terminated in the same manner as calling [`UnmanagedException`].
+    #[cold]
+    pub fn UnmanagedException(except: *const ExceptionStatusInfo) -> !;
+
     /// Installs or removes the kernel exception handler
     pub fn ExceptInstallHandler(
         except_handler: Option<ExceptHandler>,
         opts: *const KCSlice<ExceptHandlerOption>,
     ) -> SysResult;
-    pub fn ExceptHandleSynchronous(ptr: *const ExceptionInfo) -> SysResult;
+    pub fn ExceptHandleSynchronous(
+        ptr: *const ExceptionStatusInfo,
+        data: *const c_void,
+    ) -> SysResult;
     pub fn ExceptRaiseAsynchronous(
         hdl: HandlePtr<ThreadHandle>,
-        ptr: *const ExceptionInfo,
+        ptr: *const ExceptionStatusInfo,
+        data: *const c_void,
+        data_sz: usize,
     ) -> SysResult;
 
     /// Load all registers from the given context (which is then released) and resumes execution at `code_addr`
@@ -110,6 +135,11 @@ extern "system" {
         size: c_ulong,
     ) -> SysResult;
 
+    pub fn ExceptGetStopAddr(
+        ctx: HandlePtr<ExceptionContextHandle>,
+        value: *mut *mut c_void,
+    ) -> SysResult;
+
     /// Sets a register in the context.
     /// regno is the same as for [`DebugWriteRegister`][super::debug::DebugWriteRegister]. Debug and Task registers cannot be modified.
     /// `size` is the size of `value` in bytes, `value` points to that many bytes to read the register from. Valid sizes depend on `regno` and the architecture
@@ -119,4 +149,5 @@ extern "system" {
         value: *mut c_void,
         size: c_ulong,
     ) -> SysResult;
+
 }

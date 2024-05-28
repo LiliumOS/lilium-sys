@@ -3,7 +3,9 @@
 use core::ffi::c_void;
 
 use super::{
+    except::ExceptionInfo,
     handle::{Handle, HandlePtr},
+    kstr::KStrPtr,
     result::SysResult,
     signal::{SignalInformation, SignalSet},
     thread::ThreadHandle,
@@ -12,6 +14,16 @@ use super::{
 /// A Handle that represents a debugging operation in progress.
 #[repr(transparent)]
 pub struct DebugHandle(Handle);
+
+#[repr(C)]
+pub struct DebugMappingInfo {
+    pub vaddr_lo: usize,
+    pub vaddr_hi: usize,
+    pub mapping_name: KStrPtr,
+    pub kind_and_attrs: u32,
+    pub page_status: u32,
+    pub backing_paddr: u64,
+}
 
 #[allow(improper_ctypes)]
 extern "C" {
@@ -275,8 +287,7 @@ extern "C" {
     /// This results in `SIGSEGV` being delivered to the thread.
     pub fn DebugCaptureSignal(
         dh: HandlePtr<DebugHandle>,
-        sig: SignalSet,
-        info_buf: *mut SignalInformation,
+        info_buf: *mut ExceptionInfo,
     ) -> SysResult;
 
     /// Blocks the current thread until a capture is made by a prior call to `DebugCaptureSignal`.

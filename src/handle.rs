@@ -2,7 +2,7 @@ mod private {
     pub trait Sealed {}
 }
 
-use core::{marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use core::{borrow::Borrow, hash::Hash, marker::PhantomData, mem::MaybeUninit, ops::Deref};
 
 use private::Sealed;
 
@@ -104,6 +104,20 @@ impl<T> core::fmt::Pointer for HandleRef<T> {
     }
 }
 
+impl<T> PartialEq for HandleRef<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T> Eq for HandleRef<T> {}
+
+impl<T> Hash for HandleRef<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
+    }
+}
+
 #[repr(transparent)]
 pub struct OwnedHandle<T: HandleType>(HandleRef<T>, PhantomData<T>);
 
@@ -128,6 +142,20 @@ impl<T: HandleType> core::fmt::Debug for OwnedHandle<T> {
 impl<T: HandleType> core::fmt::Pointer for OwnedHandle<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl<T: HandleType> PartialEq for OwnedHandle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T: HandleType> Eq for OwnedHandle<T> {}
+
+impl<T: HandleType> Hash for OwnedHandle<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
     }
 }
 
@@ -176,6 +204,20 @@ impl<'a, T> core::fmt::Pointer for BorrowedHandle<'a, T> {
     }
 }
 
+impl<'a, T> PartialEq for BorrowedHandle<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<'a, T> Eq for BorrowedHandle<'a, T> {}
+
+impl<'a, T> Hash for BorrowedHandle<'a, T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
+    }
+}
+
 pub unsafe trait AsHandle<'a, T> {
     fn as_handle(&self) -> HandlePtr<T>;
 }
@@ -204,13 +246,36 @@ unsafe impl<'a, T> AsHandle<'a, T> for BorrowedHandle<'a, T> {
     }
 }
 
-pub struct SharedHandle<T>(sys::SharedHandlePtr, TlsKey<HandlePtr<T>>);
+unsafe impl<'a, T> AsHandle<'a, T> for &'a T
+where
+    T: AsHandle<'a, T>,
+{
+    fn as_handle(&self) -> HandlePtr<T> {
+        <T as AsHandle<'a, T>>::as_handle(self)
+    }
+}
+
+pub struct SharedHandle<T: HandleType>(sys::SharedHandlePtr, TlsKey<HandlePtr<T>>);
+
+impl<T: HandleType> core::fmt::Debug for SharedHandle<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<T: HandleType> Drop for SharedHandle<T> {
+    fn drop(&mut self) {
+        unsafe {
+            self.1.dealloc();
+        }
+    }
+}
 
 impl<T: HandleType> SharedHandle<T> {
     pub fn share(file: OwnedHandle<T>) -> Result<Self> {
         let loc = TlsKey::<HandlePtr<T>>::try_alloc()?;
 
-        let hdl = file.0;
+        let hdl = file.release_ownership();
 
         let bare_hdl = hdl.cast();
 
@@ -220,7 +285,7 @@ impl<T: HandleType> SharedHandle<T> {
         let shared = unsafe { shared.assume_init() };
 
         unsafe {
-            loc.get().write(hdl);
+            loc.get().write(bare_hdl.cast());
         }
 
         Ok(Self(shared, loc))
@@ -236,12 +301,12 @@ impl<T: HandleType> SharedHandle<T> {
                 crate::sys::handle::UpgradeSharedHandle(hdl.as_mut_ptr(), self.0)
             })?;
 
-            let hdl = unsafe { hdl.assume_init() };
+            let hdl = unsafe { hdl.assume_init() }.cast();
             unsafe {
                 self.1.get().write(hdl);
             }
 
-            hdl
+            Ok(hdl)
         } else {
             Ok(val)
         }

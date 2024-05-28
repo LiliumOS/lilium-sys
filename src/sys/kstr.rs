@@ -93,6 +93,10 @@ impl<T> KCSlice<T> {
             len: sl.len() as usize,
         }
     }
+
+    pub unsafe fn as_slice(&self) -> &[T] {
+        unsafe { core::slice::from_raw_parts(self.arr_ptr, self.len) }
+    }
 }
 
 #[repr(C)]
@@ -114,5 +118,13 @@ impl<T> KSlice<T> {
             arr_ptr: sl.as_mut_ptr(),
             len: sl.len() as usize,
         }
+    }
+
+    pub unsafe fn as_slice_mut(&mut self) -> &mut [T] {
+        unsafe { core::slice::from_raw_parts_mut(self.arr_ptr, self.len) }
+    }
+
+    pub unsafe fn as_slice(&self) -> &[T] {
+        unsafe { core::slice::from_raw_parts(self.arr_ptr, self.len) }
     }
 }

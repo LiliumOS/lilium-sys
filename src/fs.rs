@@ -14,11 +14,11 @@ use alloc::{
 use core::mem::MaybeUninit;
 
 use crate::{
-    handle::{OwnedHandle, SharedHandle},
+    handle::{AsHandle, OwnedHandle, SharedHandle},
     result::{Error, Result},
     sys::{
         fs::{self as sys, DirectoryInfo, DirectoryNext, DirectoryRead, FileHandle},
-        handle::HandlePtr,
+        handle::{Handle, HandlePtr},
         kstr::{KCSlice, KStrCPtr, KStrPtr},
         result::errors::DOES_NOT_EXIST,
     },
@@ -27,8 +27,24 @@ use crate::{
     uuid::Uuid,
 };
 
-#[derive(Hash, PartialEq, Eq, Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct OwnedFile(OwnedHandle<FileHandle>);
+
+impl OwnedFile {
+    pub const unsafe fn from_handle(hdl: HandlePtr<FileHandle>) -> OwnedFile {
+        Self(OwnedHandle::take_ownership(hdl))
+    }
+
+    pub fn as_raw(&self) -> HandlePtr<FileHandle> {
+        self.0.as_raw()
+    }
+}
+
+unsafe impl<'a> AsHandle<'a, FileHandle> for &'a OwnedFile {
+    fn as_handle(&self) -> HandlePtr<FileHandle> {
+        self.0.as_raw()
+    }
+}
 
 impl Clone for OwnedFile {
     fn clone(&self) -> Self {
@@ -41,15 +57,7 @@ impl Clone for OwnedFile {
     }
 }
 
-impl Drop for OwnedFile {
-    fn drop(&mut self) {
-        unsafe {
-            sys::CloseFile(self.0);
-        }
-    }
-}
-
-#[derive(Hash, PartialEq, Eq, Debug)]
+#[derive(Debug)]
 pub struct SharedFile(SharedHandle<FileHandle>);
 
 #[repr(transparent)]
@@ -219,7 +227,7 @@ pub fn read_link<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf> {
     let mut buf = Vec::<u8>::with_capacity(256);
 
     let mut kstr = KStrPtr {
-        str_ptr: buf.as_mut_ptr() as *mut i8,
+        str_ptr: buf.as_mut_ptr(),
         len: 256,
     };
 
@@ -233,7 +241,7 @@ pub fn read_link<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf> {
         Ok(()) => {
             if kstr.len > 256 {
                 buf.reserve(kstr.len as usize);
-                kstr.str_ptr = buf.as_mut_ptr() as *mut i8;
+                kstr.str_ptr = buf.as_mut_ptr();
                 crate::result::Error::from_code(unsafe {
                     sys::ReadSymbolicLink(
                         HandlePtr::null(),
@@ -245,7 +253,7 @@ pub fn read_link<P: AsRef<Path>>(path: P) -> crate::result::Result<PathBuf> {
         }
         Err(Error::InsufficientLength) => {
             buf.reserve(kstr.len as usize);
-            kstr.str_ptr = buf.as_mut_ptr() as *mut i8;
+            kstr.str_ptr = buf.as_mut_ptr();
             crate::result::Error::from_code(unsafe {
                 sys::ReadSymbolicLink(
                     HandlePtr::null(),
@@ -425,11 +433,15 @@ pub struct Permissions(OwnedFile);
 impl Permissions {
     pub fn readonly(&self) -> bool {
         unsafe {
-            sys::AclTestPermission(self.0 .0, KStrCPtr::from_str("Write"), KStrCPtr::empty()) == 0
+            sys::AclTestPermission(
+                self.0.as_raw(),
+                KStrCPtr::from_str("Write"),
+                KStrCPtr::empty(),
+            ) == 0
         }
     }
 
-    pub fn set_readonly(&mut self, readonly: bool) {
+    pub fn set_readonly(&mut self, _readonly: bool) {
         // No-op
         // Behaviour of this function is unclear on Lilium, so the most sensible behaviour is doing literally nothing
     }
@@ -441,7 +453,7 @@ impl Permissions {
 
         Error::from_code(unsafe { sys::CreateAcl(hdl.as_mut_ptr()) })?;
 
-        Ok(Self(OwnedFile(unsafe { hdl.assume_init() })))
+        Ok(Self(unsafe { OwnedFile::from_handle(hdl.assume_init()) }))
     }
 
     pub fn default_acl() -> Result<Self> {
@@ -449,7 +461,7 @@ impl Permissions {
 
         Error::from_code(unsafe { sys::DefaultAcl(hdl.as_mut_ptr()) })?;
 
-        Ok(Self(OwnedFile(unsafe { hdl.assume_init() })))
+        Ok(Self(unsafe { OwnedFile::from_handle(hdl.assume_init()) }))
     }
 
     pub unsafe fn from_file_handle(base: HandlePtr<FileHandle>) -> Result<Self> {
@@ -457,7 +469,7 @@ impl Permissions {
 
         Error::from_code(unsafe { sys::CopyAcl(hdl.as_mut_ptr(), base) })?;
 
-        Ok(Self(OwnedFile(unsafe { hdl.assume_init() })))
+        Ok(Self(unsafe { OwnedFile::from_handle(hdl.assume_init()) }))
     }
 
     /// Tests whether the current thread has the given `name`d permission in the ACL represented by this object.
@@ -466,7 +478,7 @@ impl Permissions {
     ///
     pub fn test_permission(&self, name: &str) -> Result<bool> {
         match Error::from_code(unsafe {
-            sys::AclTestPermission(self.0 .0, KStrCPtr::from_str(name), KStrCPtr::empty())
+            sys::AclTestPermission(self.0.as_raw(), KStrCPtr::from_str(name), KStrCPtr::empty())
         }) {
             Ok(()) => Ok(true),
             Err(Error::Permission) => Ok(false),
@@ -477,7 +489,7 @@ impl Permissions {
     pub fn test_stream_permission(&self, name: &str, stream: &str) -> Result<bool> {
         match Error::from_code(unsafe {
             sys::AclTestPermission(
-                self.0 .0,
+                self.0.as_raw(),
                 KStrCPtr::from_str(name),
                 KStrCPtr::from_str(stream),
             )
@@ -489,7 +501,7 @@ impl Permissions {
     }
 
     pub fn legacy_mode(&self) -> Option<u32> {
-        let mode = unsafe { sys::AclLegacyMode(self.0 .0) };
+        let mode = unsafe { sys::AclLegacyMode(self.0.as_raw()) };
 
         match Error::from_code(mode) {
             Ok(()) => Some(mode as u32),
@@ -499,7 +511,7 @@ impl Permissions {
     }
 
     pub fn legacy_uid(&self) -> Option<u32> {
-        let mode = unsafe { sys::AclLegacyUid(self.0 .0) };
+        let mode = unsafe { sys::AclLegacyUid(self.0.as_raw()) };
 
         match Error::from_code(mode) {
             Ok(()) => Some(mode as u32),
@@ -509,7 +521,7 @@ impl Permissions {
     }
 
     pub fn legacy_gid(&self) -> Option<u32> {
-        let mode = unsafe { sys::AclLegacyGid(self.0 .0) };
+        let mode = unsafe { sys::AclLegacyGid(self.0.as_raw()) };
 
         match Error::from_code(mode) {
             Ok(()) => Some(mode as u32),
@@ -519,19 +531,19 @@ impl Permissions {
     }
 
     pub fn set_legacy_mode(&mut self, mode: u32) -> Result<()> {
-        Error::from_code(unsafe { sys::AclSetLegacyMode(self.0 .0, mode) })
+        Error::from_code(unsafe { sys::AclSetLegacyMode(self.0.as_raw(), mode) })
     }
 
     pub fn set_legacy_uid(&mut self, uid: u32) -> Result<()> {
-        Error::from_code(unsafe { sys::AclSetLegacyUid(self.0 .0, uid as c_long) })
+        Error::from_code(unsafe { sys::AclSetLegacyUid(self.0.as_raw(), uid as c_long) })
     }
 
     pub fn set_legacy_gid(&mut self, gid: u32) -> Result<()> {
-        Error::from_code(unsafe { sys::AclSetLegacyUid(self.0 .0, gid as c_long) })
+        Error::from_code(unsafe { sys::AclSetLegacyUid(self.0.as_raw(), gid as c_long) })
     }
 
     pub fn set_owner(&mut self, uuid: Uuid) -> Result<()> {
-        Error::from_code(unsafe { sys::SetObjectOwner(self.0 .0, &uuid) })
+        Error::from_code(unsafe { sys::SetObjectOwner(self.0.as_raw(), &uuid) })
     }
 
     pub fn take_ownership(&mut self) -> Result<()> {
@@ -542,7 +554,7 @@ impl Permissions {
 
         let uuid = unsafe { uuid.assume_init() };
 
-        Error::from_code(unsafe { sys::SetObjectOwner(self.0 .0, &uuid) })
+        Error::from_code(unsafe { sys::SetObjectOwner(self.0.as_raw(), &uuid) })
     }
 
     /// Determines the owner of the file represented by this [`Permissions`] structure.
@@ -559,7 +571,7 @@ impl Permissions {
     /// This always returns a principal in the enhanced permission space.
     pub fn owner(&self) -> Option<Uuid> {
         let mut uuid = MaybeUninit::uninit();
-        match Error::from_code(unsafe { sys::ObjectOwner(self.0 .0, uuid.as_mut_ptr()) }) {
+        match Error::from_code(unsafe { sys::ObjectOwner(self.0.as_raw(), uuid.as_mut_ptr()) }) {
             Ok(()) => Some(unsafe { uuid.assume_init() }),
             Err(Error::DoesNotExist) => None,
             Err(e) => panic!("Unexpected error: {:?}", e),
