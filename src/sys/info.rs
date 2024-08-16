@@ -15,15 +15,7 @@ pub const SYS_INFO_REQUEST_BODY_SIZE: usize = if core::mem::size_of::<usize>() >
     64
 };
 
-/// Fallback type to represent unknown requests
-#[repr(C, align(32))]
-#[derive(Copy, Clone)]
-pub struct SysInfoRequestUnknown {
-    /// The Header of the request
-    pub head: ExtendedOptionHead,
-    /// The body of the request, content depends on the type.
-    pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
-}
+
 
 /// Requests OS Version Information
 #[repr(C, align(32))]
@@ -129,6 +121,16 @@ pub struct SysInfoRequestAddressSpace {
     pub page_size: usize,
 }
 
+
+/// Fallback type to represent unknown requests
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct SysInfoRequestUnknown {
+    /// The Header of the request
+    pub head: ExtendedOptionHead,
+    /// The body of the request, content depends on the type.
+    pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
+}
 /// Option struct for obtaining information about the kernel
 ///
 /// Additional extended option flags:

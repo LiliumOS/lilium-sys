@@ -59,7 +59,7 @@ pub struct ProcInfoX86XsaveFeatures {
     /// (Returned by `cpuid[eax=0x0D, ecx=0].edx:eax`)
     pub xsave_supported_components: u64,
     /// The maximum size (in bytes) of the `xsave` save area if all components indicated by `xsave_supported_components` were enabled simultaneously
-    /// (Returned by `cpuid[eax=0x0D,ecx=0.ecx`)`
+    /// (Returned by `cpuid[eax=0x0D,ecx=0].ecx`)`
     pub xsave_area_max_size: u32,
     /// The xsave feature flags
     /// (Returned by `cpuid[eax=0x0D,ecx=1].eax`)

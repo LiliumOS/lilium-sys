@@ -40,61 +40,58 @@ pub const FLAG_NO_INTERP: c_long = 0x20;
 /// The [`CreateProcess`] syscall will not return succesfully, and any thread is terminated as though by [`DestroyThread`]
 pub const FLAG_REPLACE_IMAGE: c_long = 0x40;
 
-#[repr(C)]
-pub struct ProcessStartContext {
-    /// The base directory or `FileHandle` to open to spawn the process.
+/// Fallback type for [`CreateProcessOption`]
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct CreateProcessOptionRaw {
+    /// The Header of the opton.
+    pub header: ExtendedOptionHead,
+    /// The content of the option.
+    pub data: [MaybeUninit<u8>; 32],
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct CreateProcessOptionInitHandles {
+    /// The Header of the opton.
+    pub header: ExtendedOptionHead,
+    /// THe array of handles to pass to the process.
     ///
-    /// If null, then it is an error to use relative paths.
+    /// The handle pointers are not directly copied into the initial threads handle list, but instead new handles that refer to the same object with the same capabilities are created in the initial thread.
+    /// These handles are placed in an array pointed to by [`AT_LILIUM_INIT_HANDLES`][super::elf::AT_LILIUM_INIT_HANDLES], and the length of the array is given in [`AT_LILIUM_INIT_HANDLES_LEN`][super::elf::AT_LILIUM_INIT_HANDLES].
     ///
-    /// If `prg_path` is empty, then this file handle is read verbaitim.
-    /// The file handle must be seekable (it must refer to a regular file or block device) in this case.
+    /// By convention, the first 3 items are [`IOHandle`]s that become the values of the inital threads [`__HANDLE_IO_STDIN`][super::io::__HANDLE_IO_STDIN], [`__HANDLE_IO_STDOUT`][super::io::__HANDLE_IO_STDOUT],
+    ///  and [`__HANDLE_IO_STDERR`][super::io::__HANDLE_IO_STDERR].
     ///
-    pub prg_resolution_base: HandlePtr<FileHandle>,
-    /// Path to the program to load
+    /// If the option is not specified, it acts as though handles to the process's default stdin/stdout/stderr objects are passed as the first 3 elements,
+    /// provided the appropriate handle has not been closed on the current thread (in this case, the corresponding handle is set to `null`)
+    /// Note that the default objects are not guaranteed to match the handles (as the handles may be overwritten by the process),
+    ///  the default objects are taken from the first 3 elements of the init_handles array when the process is spawned, if the array is sufficiently sized (otherwise the default objects are set to null).
+    pub init_handles: KCSlice<HandlePtr<Handle>>,
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct CreateProcessOptionEnvironment {
+    /// The header of the option.
+    pub header: ExtendedOptionHead,
+    /// A handle to the environment map to spawn the process with.
     ///
-    /// If empty and `prg_resolution_base` is set, then `prg_resolution_base` is read as an executable from seek offset `0`.
-    pub prg_path: KStrCPtr,
-    /// Environment variables to initialize the process with
+    /// If the option is omitted, the handle will refer to a copy of the environment of the current thread.
     pub environment: HandlePtr<EnvironmentMapHandle>,
+}
 
-    /// The flags to affect process spawning.
-    /// The behaviour of each flag is documented on the flag.
-    pub start_flags: c_long,
-    /// Specifies the Security Context the process starts with.
-    /// If this is null, then use the current security context of the calling thread
-    ///
-    /// If the spawned process is privilaged, that is, the program referred to by prg_path has either legacy unix SUID/SGID or an InstallSecurityContext stream,
-    /// the behaviour differs:
-    /// * If the start_security_context is null, then only the installed security context appears in the process, otherwise
-    /// * The InstallSecurityContext stream (if any) obtains the base security context,
-    ///   which is then merged with the start_security_context by adding in any permissions enabled or inheritible in the start_security context to the base security context, and revoking any that are revoked.
-    /// * Then the primary and secondary principals are modified as follows: The Real Primary Principal is set to the one in start_security_context, and the Effective Primary principal is set to the same
-    ///   only if the current thread has SET_PRIMARY_PRINCIPAL permission to the kernel. The Secondary Principal list is then populated by merging the two lists from start_security_context and from the installed context
-    /// * Then if a the Legacy SUID bit is set the Primary Principal is set to the established principal and if SGID bit is set, then the secondary principal list is cleared and the estabblished secondary principal is added.
-    /// * Non-revoked default permissions are then granted according to the Effective Primary Principal and Secondary Principals.
-    ///
-    /// Note that if a process has an InstallSecurityContext stream, the SUID/SGID bits in the LegacyUnixPermissions stream is ignored.
-    /// If FLAG_NON_PRIVILAGED is set, then both the Legacy unix SUID/SGID bits and the InstallSecurityContext streams are ignored and the start_security_context is used as normal.
-    ///
-    /// If FLAG_REQUIRED_PRIVILAGED is set, then the before merging the permission set, the installed security context
-    pub start_security_context: HandlePtr<SecurityContext>,
-    /// The length of the array pointed to by `init_handles`
-    pub init_handles_len: c_ulong,
-    /// A pointer to an array of handles to pass into the spawned process.
-    /// A corresponding array of such handles is given by the AT_PHANTOM_INIT_HANDLES array in the spawned process
-    ///
-    /// By convention, this array starts with the standard input, standard output, and standard error streams.
-    pub init_handles: *const HandlePtr<Handle>,
-
-    /// A program label, used for debugging or identifying the program via `EnumerateProcesses`
-    pub label: KStrCPtr,
-
-    /// Number of process arugments
-    pub proc_args_len: c_ulong,
-    /// Process arguments, including argv[0]
-    pub proc_args: *const KStrCPtr,
-    /// The namespace to place the process in
-    pub init_namespace: HandlePtr<NamespaceHandle>,
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub union CreateProcessOption {
+    /// The Header
+    pub head: ExtendedOptionHead,
+    /// Fallback field for statically unknown options
+    pub raw: CreateProcessOptionRaw,
+    /// Specifies the initial handles array for the spawned process
+    pub init_handles: CreateProcessOptionInitHandles,
+    /// Specifies the environment map
+    pub env_map: CreateProcessOptionEnvironment,
 }
 
 #[repr(transparent)]
@@ -156,7 +153,7 @@ pub const MAP_KIND_RESIDENT: u32 = 1;
 pub const MAP_KIND_SECURE: u32 = 2;
 pub const MAP_KIND_ENCRYPTED: u32 = 3;
 
-#[repr(C)]
+#[repr(C, align(32))]
 #[derive(Copy, Clone)]
 pub struct MapExtendedAttrRaw {
     pub header: ExtendedOptionHead,
@@ -247,11 +244,43 @@ extern "C" {
 
     /// Spawns a new process and places a handle to it in `hdl`.
     ///
+    /// ## Parameters
     ///
-    /// `ctx` contains the information needed to spawn the process, including the program to run, the security context to start it with, and initial handles passed to the process
+    /// `resolution_base` and `path` are used to find the executable object as follows:
+    /// * If `path` is an absolute path (starts with `/`), then `resolution_base` is ignored, and the executable object is located by resolving `path`.
+    /// * If `path` is a non-empty relative path, it it resolved relative to `resolution_base` or the thread's current working directory if `resolution_base` is null,
+    /// * If `path` is empty, then the executable object is given by `resolution_base` directly and path resolution is not performed.
+    ///
+    /// ## Object Lookup
+    ///
+    /// When `resolution_base` is used to directly access the object, it is not resolved as a symbolic link. It must refer to a data stream (such as `Data`).
+    /// The handle must have [`io::CHAR_READABLE`][super::io::CHAR_READABLE] and [io::CHAR_SEEKABLE][super::io::CHAR_SEEKABLE]. Regardless of characters and capabilities, a DACL permission check for the `Executable` permission.
+    ///
+    /// When `resolution_base` is used to resolve a path, the handle must have the capability `SearchDirectory` and must be valid for path resolution.
+    /// Symbolic link streams are resolved using physical path resolution before resollving `path` using symbolic path resolution.
+    ///
+    /// When a new object is opened, symbolic links are resolved, then the `Data` stream is opened if defined, regardless of the object type.
+    /// The `Executable` DACL permission is checked, and the `Readable` DACL permission is ignored for this stream open
+    /// Otherwise, if a default stream type that is not recognized as a `Data` Stream, an [`INVALID_OPERATION`][super::result::errors::INVALID_OPERATION] error is returned.
+    ///
+    /// ## Image Loading
+    ///
+    /// Unless [`FLAG_NO_INTERP`] is set, the process image is loaded in two phases:
+    /// * First, if the image is an ELF Executable* file that is appropriate for the architecture, then it is mapped into memory as though each `PT_LOAD` segment is used in a [`CreateMapping`] call
+    /// * The interpreter for the image is then determined:
+    ///     * If it is a ELF File, the content of the `PT_INTERP` segment, if any, is read and interpreted as a path, resolved by `resolution_base` if it is relative.
+    ///     * If the file starts with an optional UTF-8 BOM, then the strings `#!!` or `#!` in ASCII followed by valid UTF-8 up to and including the first occurance of a `0x0a` byte in the file,
+    ///   the interpreter is read from the remainder of the `\n` terminated line, resolved by `resolution_base` if it is relative.
+    ///     * Otherwise, if the kernel supports custom format images, the supplier object is returned from a device command `17494569-c542-51f6-bf30-7154703b7f79` (ResolveImageInterpreter)
+    ///  issued to the custom image format resolver device, with a handle to the object that has [`io::CHAR_READABLE`][super::io::CHAR_READABLE] and no capabilities.
+    /// The command returns a `HandlePtr` to a `FileHandle` that points to the interpreter.
+    ///
+    ///
     pub fn CreateProcess(
-        ctx: *const ProcessStartContext,
         hdl: *mut HandlePtr<ProcessHandle>,
+        resolution_base: HandlePtr<FileHandle>,
+        path: *const KStrCPtr,
+        options: *const KCSlice<MapExtendedAttr>,
     ) -> SysResult;
 
     /// Causes the process designated by `hdl` to terminate, as though it recieved an unmanaged exception with code `79a90b8e-8f4b-5134-8aa2-ff68877017db` (RemoteStop)
