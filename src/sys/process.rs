@@ -4,7 +4,7 @@ use core::mem::MaybeUninit;
 use bytemuck::Zeroable;
 
 use crate::uuid::parse_uuid;
-use crate::{io::IOHandle, uuid::Uuid};
+use crate::{sys::io::IOHandle, uuid::Uuid};
 
 use super::except::ExceptionStatusInfo;
 use super::kstr::KCSlice;
@@ -79,6 +79,15 @@ pub struct CreateProcessOptionEnvironment {
     ///
     /// If the option is omitted, the handle will refer to a copy of the environment of the current thread.
     pub environment: HandlePtr<EnvironmentMapHandle>,
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct CreateProcessOptionArgs {
+    /// The header of the option.
+    pub header: ExtendedOptionHead,
+    /// The List of Arguments to pass to the process
+    pub arguments: KCSlice<KStrCPtr>,
 }
 
 #[repr(C, align(32))]

@@ -2,6 +2,7 @@
 #![feature(thread_local, never_type)]
 //! High and Low-level bindings to the PhantomOS kernel interfaces
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 pub mod sys;

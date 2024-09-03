@@ -79,6 +79,13 @@ pub struct KCSlice<T> {
     pub len: usize,
 }
 
+impl<T> Copy for KCSlice<T>{}
+impl<T> Clone for KCSlice<T>{
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
 impl<T> KCSlice<T> {
     pub const fn empty() -> Self {
         Self {

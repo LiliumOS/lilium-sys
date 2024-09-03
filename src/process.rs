@@ -40,7 +40,7 @@ use crate::{
         kstr::KStrCPtr,
         process::{
             self as sys, CreateProcess, EnumerateProcessHandle, EnvironmentMapHandle,
-            ProcessHandle, ProcessStartContext,
+            ProcessHandle,
         },
     },
 };
@@ -110,27 +110,7 @@ impl Command<'_> {
             .map(Deref::deref)
             .map(KStrCPtr::from_str)
             .collect::<Vec<_>>();
-        let start_ctx = ProcessStartContext {
-            prg_resolution_base: self.resolution_base,
-            prg_path: KStrCPtr::from_str(self.cmd.as_str()),
-            environment: self.env,
-            start_flags: self.flags.bits(),
-            start_security_context: self.start_security_context,
-            init_handles_len: self.init_handles.len() as c_ulong,
-            init_handles: self.init_handles.as_ptr(),
-            label: KStrCPtr::from_str(self.label.as_str()),
-            proc_args_len: proc_args.len() as c_ulong,
-            proc_args: proc_args.as_ptr(),
-            init_namespace: self.namespace,
-        };
-
-        let mut hdl = MaybeUninit::uninit();
-
-        crate::result::Error::from_code(unsafe { CreateProcess(&start_ctx, hdl.as_mut_ptr()) })?;
-
-        Ok(CommandResult {
-            hdl: unsafe { hdl.assume_init() },
-        })
+        todo!()
     }
 
     unsafe fn spawn_replace_image(&mut self) -> crate::result::Result<!> {

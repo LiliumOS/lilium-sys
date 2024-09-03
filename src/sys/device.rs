@@ -10,7 +10,7 @@
 
 use core::ffi::{c_long, c_ulong, c_void};
 
-use crate::{security::SecurityContext, uuid::Uuid};
+use crate::{sys::permission::SecurityContext, uuid::Uuid};
 
 use self::udev::DeviceCommandParameter;
 

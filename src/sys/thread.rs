@@ -21,7 +21,7 @@ pub struct ThreadStartContext {
 }
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     pub fn StartThread(
         tsc: *const ThreadStartContext,
         thout: *mut HandlePtr<ThreadHandle>,
@@ -49,7 +49,7 @@ extern "C" {
     pub fn RecieveHandle(out: *mut HandlePtr<Handle>) -> SysResult;
 
     pub fn SetThreadName(th: HandlePtr<ThreadHandle>, name: KStrCPtr) -> SysResult;
-    pub fn GetThreadName(th: HandlePtr<ThreadHandle>, name: KStrPtr) -> SysResult;
+    pub fn GetThreadName(th: HandlePtr<ThreadHandle>, name: *mut KStrPtr) -> SysResult;
 
     pub fn tls_register_destructor(dtor: fn(*mut c_void), key: isize) -> SysResult;
 
@@ -57,19 +57,19 @@ extern "C" {
     /// Returns the offset from the beginning of the TLS base address for dyanmically allocated thread locals (via tss_t or pthread_key_t)
     pub fn get_tls_slide_offset() -> c_long;
 
-    pub fn thread_init_after_start(th: HandlePtr<ThreadHandle>) -> SysResult;
-    pub fn thread_init_self() -> SysResult;
+    pub unsafe fn thread_init_after_start(th: HandlePtr<ThreadHandle>) -> SysResult;
+    pub unsafe fn thread_init_self() -> SysResult;
 
-    pub fn thread_register_after_start(
+    pub unsafe fn thread_register_after_start(
         cb: fn(*mut c_void, HandlePtr<ThreadHandle>) -> SysResult,
         udata: *mut c_void,
     ) -> SysResult;
-    pub fn thread_register_init_self(
+    pub unsafe fn thread_register_init_self(
         cb: fn(*mut c_void) -> SysResult,
         udata: *mut c_void,
     ) -> SysResult;
 
-    pub fn tls_alloc_dyn(size: usize) -> isize;
-    pub fn tls_alloc_dyn_aligned(size: usize, align: usize) -> isize;
-    pub fn tls_free_dyn(key: isize);
+    pub unsafe fn tls_alloc_dyn(size: usize) -> isize;
+    pub unsafe fn tls_alloc_dyn_aligned(size: usize, align: usize) -> isize;
+    pub unsafe fn tls_free_dyn(key: isize);
 }

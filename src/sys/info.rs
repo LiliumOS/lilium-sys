@@ -79,18 +79,54 @@ pub struct SysInfoRequestComputerName {
 }
 
 pub mod arch_info {
+    use super::SysInfoRequestArchInfo;
     use crate::uuid::{parse_uuid, Uuid};
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating x86-64 (64-bit x86 processors).
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set to the microarch version known to be supported, or `0` if the microarch version cannot be determined
     pub const ARCH_TYPE_X86_64: Uuid = parse_uuid("52aa8be1-822d-502c-8309-cf4d785ad524");
+
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating 32-bit x86 (IA-32).
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set as follows:
+    /// * 3: Processor equivalent to the Intel i386 Processor or within 3rd Generation.
+    /// * 4: Processor equivalent to the Intel i486 Processor or within 4th Generation.
+    /// * 5: Processor equivalent to the Intel Pentium Processor or within the 5th Generation.
+    /// * 6: Processor equivalent to the Intel Pentium Pro Processor or within the 6th Generation.
+    /// * 7: Processor equivalent to the Intel Pentium 4 Processor or newer (including 32-bit Kernels running on 64-bit x86 processors)
+    /// 
+    /// ## Notes
+    /// The `arch_version` value will never be set below 3, as that indicates a 16-bit processor, rather than a 32-bit processor.
+    /// Additionally, the standard Lilium kernel will not set this below 6, as the minimum supported processor for 32-bit x86 is the Pentium Pro 
+    ///  (however, a 3rd party kernel or emulator that complies with the SCI may return a smaller value).
+    /// 
+    /// The value of `arch_version` is such that the Compiler Target according to the [LCCC Project](https://github.com/lccc-project/lccc) given by `i{arch_version}86-pc-lilium-standard` 
+    ///  will generate code that is correct for the current target.
     pub const ARCH_TYPE_X86_IA_32: Uuid = parse_uuid("84d2de8d-00e5-55bd-a65c-e28a842c2778");
     pub const ARCH_VERSION_X86_IA_32_386: u32 = 3;
     pub const ARCH_VERSION_X86_IA_32_486: u32 = 4;
     pub const ARCH_VERSION_X86_IA_32_586: u32 = 5;
     pub const ARCH_VERSION_X86_IA_32_686: u32 = 6;
     pub const ARCH_VERSION_X86_IA_32_P4: u32 = 7;
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating Clever-ISA.
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set to the major version of the Clever-ISA Specification known to be implemented.
     pub const ARCH_TYPE_CLEVER_ISA: Uuid = parse_uuid("311dbdf0-32e5-5e7f-a2df-3d822c137b68");
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating 32-bit ARM
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the ARM Specification known to be implemented.
     pub const ARCH_TYPE_ARM32: Uuid = parse_uuid("691cb76d-a4d5-5639-92b6-8e890ff6d09e");
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating Aarch64
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the ARM Specification known to be implemented. This value will never be less than 8 (since ARMv8 is the first version to include the Aarch64 instruction set)
     pub const ARCH_TYPE_AARCH64: Uuid = parse_uuid("5c8fc578-f44d-5c7d-91cf-4a9446466f1a");
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating 32-bit RISC-V.
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the RISC-V specification implemented
     pub const ARCH_TYPE_RISCV32: Uuid = parse_uuid("394463df-b66a-5f10-a970-a4bdda21c80e");
+    /// [`SysInfoRequestArchInfo::arch_type`] value indicating 64-bit RISC-V.
+    /// 
+    /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the RISC-V specification implemented
     pub const ARCH_TYPE_RISCV64: Uuid = parse_uuid("d6129403-1104-5d03-8b4c-1176fc9f17fd");
 }
 
