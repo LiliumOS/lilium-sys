@@ -289,7 +289,7 @@ extern "C" {
         hdl: *mut HandlePtr<ProcessHandle>,
         resolution_base: HandlePtr<FileHandle>,
         path: *const KStrCPtr,
-        options: *const KCSlice<MapExtendedAttr>,
+        options: *const KCSlice<CreateProcessOption>,
     ) -> SysResult;
 
     /// Causes the process designated by `hdl` to terminate, as though it recieved an unmanaged exception with code `79a90b8e-8f4b-5134-8aa2-ff68877017db` (RemoteStop)
@@ -367,4 +367,8 @@ extern "C" {
         new_base_addr: *mut c_void,
         new_page_count: c_long,
     ) -> SysResult;
+
+    /// Aborts the process. This will first call [`ExceptHandleSynchronous`][crate::sys::except::ExceptHandleSynchronous] with exception `466fbae6-be8b-5525-bd04-ee7153b74f55` (ProcessAbort),
+    ///  then calls [`UnmangedException`][crate::sys::except::UnmanagedException] after USI registered handlers (including those registered via `signal`) return.
+    pub fn abort() -> !;
 }

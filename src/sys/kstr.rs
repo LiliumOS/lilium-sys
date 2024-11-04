@@ -1,3 +1,6 @@
+#[cfg(feature = "std")]
+use std::ffi::OsStr;
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct KStrCPtr {
@@ -13,11 +16,25 @@ impl KStrCPtr {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub fn from_os_str<S: AsRef<OsStr> + ?Sized>(st: &S) -> Self {
+        let os_str = st.as_ref();
+        let bytes = os_str.as_encoded_bytes();
+        KStrCPtr {
+            str_ptr: bytes.as_ptr(),
+            len: bytes.len(),
+        }
+    }
+
     pub const fn empty() -> Self {
         KStrCPtr {
             str_ptr: core::ptr::NonNull::dangling().as_ptr(),
             len: 0,
         }
+    }
+
+    unsafe fn as_bytes<'a>(&self) -> &'a [u8] {
+        unsafe { core::slice::from_raw_parts(self.str_ptr.cast(), self.len as usize) }
     }
 
     /// # Safety
@@ -56,6 +73,10 @@ impl KStrPtr {
         }
     }
 
+    unsafe fn as_bytes<'a>(&self) -> &'a [u8] {
+        unsafe { core::slice::from_raw_parts(self.str_ptr.cast(), self.len as usize) }
+    }
+
     /// # Safety
     ///
     /// As `str_ptr` and `len` fields are public,
@@ -63,13 +84,8 @@ impl KStrPtr {
     ///
     /// Note that, after any syscall that returns successfully, a [`KStrPtr`] passed to the syscall will be initialized to valid UTF-8, and set the length field to the length of the valid string
     /// (at most the length of the buffer indicated by the kernel).
-    pub unsafe fn as_str(&self) -> &str {
-        unsafe {
-            core::str::from_utf8_unchecked(core::slice::from_raw_parts(
-                self.str_ptr.cast(),
-                self.len as usize,
-            ))
-        }
+    pub unsafe fn as_str<'a>(&self) -> &'a str {
+        unsafe { core::str::from_utf8_unchecked(self.as_bytes()) }
     }
 }
 
@@ -79,8 +95,8 @@ pub struct KCSlice<T> {
     pub len: usize,
 }
 
-impl<T> Copy for KCSlice<T>{}
-impl<T> Clone for KCSlice<T>{
+impl<T> Copy for KCSlice<T> {}
+impl<T> Clone for KCSlice<T> {
     fn clone(&self) -> Self {
         *self
     }

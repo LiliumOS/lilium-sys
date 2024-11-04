@@ -150,4 +150,13 @@ extern "system" {
         size: c_ulong,
     ) -> SysResult;
 
+    /// Registers a function to run when the standard USI handler begins.
+    /// If any hook calls causes a synchronous exception (unless it installs a non-USI exception handler), the process calls [`UnmanagedException`] immediately.
+    /// Hooks are entered in the order they are registered.
+    ///
+    /// However, it should be noted that asynchronous exceptions will enter the hooks, so
+    pub fn except_hook(
+        userdata: *mut c_void,
+        hook: unsafe extern "system" fn(*mut c_void, *const ExceptionInfo),
+    ) -> SysResult;
 }

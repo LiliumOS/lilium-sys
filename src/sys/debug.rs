@@ -263,16 +263,10 @@ extern "C" {
         dh: HandlePtr<DebugHandle>,
         regno: u32,
         buf: *const c_void,
+        meta: u32,
     ) -> SysResult;
 
-    /// Captures signals specified by `sig` issued to the thread referred to by `dh`, and stores information in `info_buf`.
-    ///
-    /// When a captured signal is delivered to a process (see signal delivery), `info_buf` is modified asynchronously and the thread is suspended immediaetly prior to executing any
-    ///  action on that thread.
-    ///
-    /// It is undefined behaviour to access `info_buf` unless such access is synchronized, such as by an explicit `DebugSuspend`, or a successfull return by `DebugAwaitCapture` or `DebugPollCapture`
-    ///
-    /// Using an empty signal set for `sig` disables signal capture.
+    /// Captures Exceptions raised on the target thread.
     ///
     /// ## Errors
     ///
@@ -285,7 +279,7 @@ extern "C" {
     /// If `info_buf` does not belong to a valid mapping when the syscall is made, `INVALID_MEMORY` is returned immediately.
     /// However, if it belongs to mapped memory at the time of the syscall, and is unmapped prior to being written by the kernel, this is not checked.
     /// This results in `SIGSEGV` being delivered to the thread.
-    pub fn DebugCaptureSignal(
+    pub fn DebugCaptureExceptions(
         dh: HandlePtr<DebugHandle>,
         info_buf: *mut ExceptionInfo,
     ) -> SysResult;

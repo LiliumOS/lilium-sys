@@ -1,8 +1,12 @@
-use core::ffi::{c_int, c_long, c_ulong, c_void};
+use core::{
+    ffi::{c_int, c_long, c_ulong, c_void},
+    mem::MaybeUninit,
+};
 
 use super::{
     handle::*,
-    kstr::{KStrCPtr, KStrPtr},
+    kstr::{KCSlice, KStrCPtr, KStrPtr},
+    option::ExtendedOptionHead,
     result::SysResult,
     time::Duration,
 };
@@ -20,11 +24,26 @@ pub struct ThreadStartContext {
     pub __private: (),
 }
 
+#[derive(Copy, Clone)]
+#[repr(C, align(32))]
+pub struct ThreadStartOptionRaw {
+    pub head: ExtendedOptionHead,
+    pub payload: [MaybeUninit<u8>; 64],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C, align(32))]
+pub union ThreadStartOption {
+    pub head: ExtendedOptionHead,
+    pub raw: ThreadStartOptionRaw,
+}
+
 #[allow(improper_ctypes)]
 unsafe extern "C" {
     pub fn StartThread(
         tsc: *const ThreadStartContext,
         thout: *mut HandlePtr<ThreadHandle>,
+        options: KCSlice<ThreadStartOption>,
     ) -> SysResult;
     pub fn ParkThread() -> SysResult;
     pub fn UnparkThread(th: HandlePtr<ThreadHandle>) -> SysResult;
