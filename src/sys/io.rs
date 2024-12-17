@@ -57,7 +57,12 @@ extern "C" {
     pub fn IORead(hdl: HandlePtr<IOHandle>, buf: *mut c_void, len: c_ulong) -> SysResult;
     pub fn IOWrite(hdl: HandlePtr<IOHandle>, buf: *const c_void, len: c_ulong) -> SysResult;
     pub fn IOSeek(hdl: HandlePtr<IOHandle>, from: u32, offset: i64) -> SysResult;
-    pub fn IOSeekFar(hdl: HandlePtr<IOHandle>, from: u32, offset: i128) -> SysResult;
+    pub fn IOSeekFar(
+        hdl: HandlePtr<IOHandle>,
+        from: u32,
+        offset: i128,
+        abs_off: *mut u128,
+    ) -> SysResult;
 
     /// Copies a number of bytes from `src_hdl` to `dest_hdl`, without an intermediate return to userspace
     /// This is intended to bemore efficient than performing individual `IORead` and `IOWrite` calls.
@@ -79,8 +84,13 @@ extern "C" {
     ///    is written as a single unit (this is important if `dest` is a datagram socket)
     /// * Likewise, if `dest` is a pipe, and src is a datagram socket, the next datagram recieved, up to the dest buffer size, is written as a single unit.
     ///    If the datagram exceeds the buffer size, it is split.
-    /// * If both are files, the size of the copied data may exceed the bounds of `unsigned long`. In this case, `EXCEEDS_LIMIT` "error" is returned (as if a length in excess of `long` was passed)
-    pub fn IOCopyFull(src_hdl: HandlePtr<IOHandle>, dest_hdl: HandlePtr<IOHandle>) -> SysResult;
+    ///
+    /// The length of the operation transfered is stored in `size`.
+    pub fn IOCopyFull(
+        src_hdl: HandlePtr<IOHandle>,
+        dest_hdl: HandlePtr<IOHandle>,
+        size: *mut u128,
+    ) -> SysResult;
 
     pub fn IOReadRA(
         hdl: HandlePtr<IOHandle>,

@@ -479,4 +479,10 @@ extern "C" {
     pub fn SetCurrentDirectory(dir: HandlePtr<FileHandle>) -> SysResult;
 
     pub fn SetResolutionRoot(res_base: HandlePtr<FileHandle>) -> SysResult;
+
+    pub fn CopyAllStreams(
+        old_file: HandlePtr<FileHandle>,
+        new_file: HandlePtr<FileHandle>,
+        total_size_out: *mut u128,
+    ) -> SysResult;
 }
