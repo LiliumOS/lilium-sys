@@ -229,7 +229,7 @@ pub union ProcInfoRequest {
     pub arch: ProcInfoArchRequest,
 }
 
-extern "system" {
+unsafe extern "system" {
     /// Obtains information about the OS.
     /// Each information request is provided as a [`SysInfoRequest`]. The caller is responsibile for initializing the header of the request,
     ///  and if the request is recongized, the fields of the request are set by the kernel.

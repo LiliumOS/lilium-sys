@@ -20,7 +20,7 @@ pub union ThreadOwner {
 }
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     pub fn CreateSecurityContext(nctx: *mut HandlePtr<SecurityContext>) -> SysResult;
     pub fn CopySecurityContext(
         nctx: *mut HandlePtr<SecurityContext>,

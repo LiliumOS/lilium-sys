@@ -200,7 +200,7 @@ pub const ACL_MODE_FORBID: u32 = 2;
 pub const ACL_MODE_INHERIT: u32 = 3;
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     /// Opens a new file handle with the given path
     pub fn OpenFile(
         hdl: *mut HandlePtr<FileHandle>,

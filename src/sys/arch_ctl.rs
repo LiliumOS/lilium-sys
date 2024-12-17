@@ -45,7 +45,7 @@ pub union ArchConfigOption {
     pub arch: ArchConfigArchOption,
 }
 
-extern "system" {
+unsafe extern "system" {
     /// Sets the current arch config. The ability set any particular config depends on the Arch, kernel support, and the particular CPU.
     ///
     pub fn SetArchConfig(config_options: *const KCSlice<ArchConfigOption>) -> SysResult;

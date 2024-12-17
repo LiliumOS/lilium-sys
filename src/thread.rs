@@ -66,9 +66,9 @@ impl<T> TlsKey<T> {
         get_tls_ptr_impl(self.0).cast()
     }
 
-    pub unsafe fn dealloc(self) {
+    pub unsafe fn dealloc(self) { unsafe {
         sys::tls_free_dyn(self.0)
-    }
+    }}
 }
 
 cfg_if::cfg_if! {

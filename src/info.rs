@@ -64,13 +64,13 @@ impl FromRequest for OsVersion {
     unsafe fn find_strings<'a, 'b>(
         x: &'a mut sys::SysInfoRequest,
         init_arr: &'b mut [Option<&'a mut KStrPtr>],
-    ) -> &'b mut [&'a mut KStrPtr] {
+    ) -> &'b mut [&'a mut KStrPtr] { unsafe {
         init_arr[0] = Some(&mut x.os_version.osvendor_name);
 
         unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1) }
-    }
+    }}
 
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
         let sys::SysInfoRequestOsVersion {
             osvendor_name,
             os_major,
@@ -85,7 +85,7 @@ impl FromRequest for OsVersion {
             major_version: os_major,
             minor_version: os_minor,
         }
-    }
+    }}
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -102,13 +102,13 @@ impl FromRequest for KernelVendor {
     unsafe fn find_strings<'a, 'b>(
         x: &'a mut sys::SysInfoRequest,
         init_arr: &'b mut [Option<&'a mut KStrPtr>],
-    ) -> &'b mut [&'a mut KStrPtr] {
+    ) -> &'b mut [&'a mut KStrPtr] { unsafe {
         init_arr[0] = Some(&mut x.kernel_vendor.kvendor_name);
 
         unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1) }
-    }
+    }}
 
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
         let sys::SysInfoRequestKernelVendor {
             kvendor_name,
             kernel_major,
@@ -125,7 +125,7 @@ impl FromRequest for KernelVendor {
             major_version: kernel_major,
             minor_version: kernel_minor,
         }
-    }
+    }}
 }
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -144,12 +144,12 @@ impl FromRequest for ArchInfo {
         &mut []
     }
 
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
         Self {
             arch_id: x.arch_info.arch_type,
             version: x.arch_info.arch_version,
         }
-    }
+    }}
 }
 
 impl core::fmt::Debug for ArchInfo {
@@ -219,7 +219,7 @@ impl FromRequest for ComputerName {
     unsafe fn find_strings<'a, 'b>(
         x: &'a mut sys::SysInfoRequest,
         init_arr: &'b mut [Option<&'a mut KStrPtr>],
-    ) -> &'b mut [&'a mut KStrPtr] {
+    ) -> &'b mut [&'a mut KStrPtr] { unsafe {
         let req = &mut x.computer_name;
 
         init_arr[0] = Some(&mut req.hostname);
@@ -227,9 +227,9 @@ impl FromRequest for ComputerName {
         init_arr[2] = Some(&mut req.sys_label);
 
         unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 3) }
-    }
+    }}
 
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
         let sys::SysInfoRequestComputerName {
             hostname,
             sys_display_name,
@@ -248,7 +248,7 @@ impl FromRequest for ComputerName {
             label,
             computer_id: sys_id,
         }
-    }
+    }}
 }
 
 pub struct RequestBuilder {

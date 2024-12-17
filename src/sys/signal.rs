@@ -33,7 +33,7 @@ pub const SIGNAL_INTERRUPT_FLAG: u32 = 0x01;
 pub const SIGNAL_GLOBAL_FLAG: u32 = 0x02;
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     pub fn SignalThread(th: HandlePtr<ThreadHandle>, signo: u32) -> SysResult;
     pub fn SignalProcess(ph: HandlePtr<ProcessHandle>, signo: u32) -> SysResult;
     pub fn SetSignalHandlingThread(th: HandlePtr<ThreadHandle>) -> SysResult;

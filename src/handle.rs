@@ -35,39 +35,39 @@ impl Sealed for FileHandle {}
 impl Sealed for DeviceHandle {}
 
 impl HandleType for ThreadHandle {
-    unsafe fn destroy(ptr: HandlePtr<Self>) {
+    unsafe fn destroy(ptr: HandlePtr<Self>) { unsafe {
         DetachThread(ptr);
-    }
+    }}
 }
 
 impl HandleType for DebugHandle {
-    unsafe fn destroy(ptr: HandlePtr<Self>) {
+    unsafe fn destroy(ptr: HandlePtr<Self>) { unsafe {
         DebugDetach(ptr);
-    }
+    }}
 }
 
 impl HandleType for SecurityContext {
-    unsafe fn destroy(ptr: HandlePtr<Self>) {
+    unsafe fn destroy(ptr: HandlePtr<Self>) { unsafe {
         DestroySecurityContext(ptr);
-    }
+    }}
 }
 
 impl HandleType for IOHandle {
-    unsafe fn destroy(ptr: HandlePtr<Self>) {
+    unsafe fn destroy(ptr: HandlePtr<Self>) { unsafe {
         CloseIOStream(ptr);
-    }
+    }}
 }
 
 impl HandleType for FileHandle {
-    unsafe fn destroy(ptr: HandlePtr<Self>) {
+    unsafe fn destroy(ptr: HandlePtr<Self>) { unsafe {
         CloseIOStream(ptr.cast());
-    }
+    }}
 }
 
 impl HandleType for DeviceHandle {
-    unsafe fn destroy(ptr: HandlePtr<Self>) {
+    unsafe fn destroy(ptr: HandlePtr<Self>) { unsafe {
         CloseIOStream(ptr.cast());
-    }
+    }}
 }
 
 #[repr(transparent)]

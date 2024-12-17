@@ -26,7 +26,7 @@ pub struct DebugMappingInfo {
 }
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     /// Attaches a debugger to the given thread, and returns a handle to that debugger.
     ///
     ///

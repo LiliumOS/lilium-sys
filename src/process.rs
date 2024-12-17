@@ -113,10 +113,10 @@ impl Command<'_> {
         todo!()
     }
 
-    unsafe fn spawn_replace_image(&mut self) -> crate::result::Result<!> {
+    unsafe fn spawn_replace_image(&mut self) -> crate::result::Result<!> { unsafe {
         self.flags |= ProcessStartFlags::REPLACE_IMAGE;
         self.spawn_with_result().map(|_| debug_unreachable())
-    }
+    }}
 }
 
 pub struct Stdio<'a>(

@@ -4,7 +4,7 @@ pub type SysResult = isize;
 pub type NonZeroSysResult = core::num::NonZeroIsize;
 
 macro_rules! error_def{
-    {$(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:expr)* } => {
+    {$(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:expr_2021)* } => {
         $(#[$outer_meta])*
         pub mod errors{
             $($(#[$meta])* pub const $name: super::SysResult = $val;)*
@@ -20,7 +20,7 @@ with_builtin_macros::with_builtin! {
 
 #[macro_export]
 macro_rules! sys_try {
-    ($e:expr) => {{
+    ($e:expr_2021) => {{
         let val: $crate::sys::result::SysResult = $e;
 
         if val < 0 {
@@ -32,7 +32,7 @@ macro_rules! sys_try {
 
 #[macro_export]
 macro_rules! sys_try_nonzero {
-    ($e:expr) => {{
+    ($e:expr_2021) => {{
         let val: $crate::sys::result::NonZeroSysResult = $e;
 
         if val.get() < 0 {

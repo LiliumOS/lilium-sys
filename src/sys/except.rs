@@ -68,7 +68,7 @@ pub type ExceptHandler =
     unsafe extern "system" fn(*mut ExceptionInfo, HandlePtr<ExceptionContextHandle>) -> !;
 
 #[allow(improper_ctypes)]
-extern "system" {
+unsafe extern "system" {
 
     /// Aborts the calling thread by reporting  `except` as having been recieved but not handled
     ///
@@ -79,10 +79,10 @@ extern "system" {
     /// If no [`ExceptHandler`] is installed (or calling the [`ExceptHandler`] triggers an exception) when a thread recieves an exception,
     ///  the thread is terminated in the same manner as calling [`UnmanagedException`].
     #[cold]
-    pub fn UnmanagedException(except: *const ExceptionStatusInfo) -> !;
+    pub unsafe fn UnmanagedException(except: *const ExceptionStatusInfo) -> !;
 
     /// Installs or removes the kernel exception handler
-    pub fn ExceptInstallHandler(
+    pub unsafe fn ExceptInstallHandler(
         except_handler: Option<ExceptHandler>,
         opts: *const KCSlice<ExceptHandlerOption>,
     ) -> SysResult;

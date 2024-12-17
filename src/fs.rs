@@ -31,9 +31,9 @@ use crate::{
 pub struct OwnedFile(OwnedHandle<FileHandle>);
 
 impl OwnedFile {
-    pub const unsafe fn from_handle(hdl: HandlePtr<FileHandle>) -> OwnedFile {
+    pub const unsafe fn from_handle(hdl: HandlePtr<FileHandle>) -> OwnedFile { unsafe {
         Self(OwnedHandle::take_ownership(hdl))
-    }
+    }}
 
     pub fn as_raw(&self) -> HandlePtr<FileHandle> {
         self.0.as_raw()

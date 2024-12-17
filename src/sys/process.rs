@@ -214,7 +214,7 @@ pub union MapExtendedAttr {
 }
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     /// Obtains a handle to the current process environment
     pub fn GetCurrentEnvironment(hdl: *mut HandlePtr<EnvironmentMapHandle>) -> SysResult;
     /// Reads the given environment handle, with a given variable name, and stores the result in the KStr pointed to by `*val_out`

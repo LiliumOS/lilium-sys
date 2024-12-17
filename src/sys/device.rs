@@ -102,7 +102,7 @@ pub struct DeviceFeature {
 }
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
 
     /// Creates a new block device backed by `backing_hdl`, with the specified configuration.
     ///

@@ -13,7 +13,7 @@ pub struct ServerHandle(Handle);
 pub struct sockaddr {}
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
     pub fn CreateServerSocket(servout: *mut HandlePtr<ServerHandle>) -> SysResult;
 
     pub fn ConnectAnon(

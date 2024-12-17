@@ -39,7 +39,7 @@ pub struct PollInfo {
 }
 
 #[allow(improper_ctypes)]
-extern "C" {
+unsafe extern "C" {
 
     /// Thread Local handle that is initialized to the standard input stream by the standard library
     #[thread_local]
