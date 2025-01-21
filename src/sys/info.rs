@@ -15,8 +15,6 @@ pub const SYS_INFO_REQUEST_BODY_SIZE: usize = if core::mem::size_of::<usize>() >
     64
 };
 
-
-
 /// Requests OS Version Information
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
@@ -29,6 +27,18 @@ pub struct SysInfoRequestOsVersion {
     pub os_major: u32,
     /// The minor os version
     pub os_minor: u32,
+}
+
+impl SysInfoRequestOsVersion {
+    pub const INIT: Self = Self {
+        head: ExtendedOptionHead {
+            ty: SYSINFO_REQUEST_OSVER,
+            ..ExtendedOptionHead::ZERO
+        },
+        osvendor_name: KStrPtr::empty(),
+        os_major: 0,
+        os_minor: 0,
+    };
 }
 
 /// Requests Kernel Vendor Name
@@ -47,6 +57,19 @@ pub struct SysInfoRequestKernelVendor {
     pub kernel_minor: u32,
 }
 
+impl SysInfoRequestKernelVendor {
+    pub const INIT: Self = Self {
+        head: ExtendedOptionHead {
+            ty: SYSINFO_REQUEST_KVENDOR,
+            ..ExtendedOptionHead::ZERO
+        },
+        kvendor_name: KStrPtr::empty(),
+        build_id: Uuid::NIL,
+        kernel_major: 0,
+        kernel_minor: 0,
+    };
+}
+
 /// Requests Global Architecture Info
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
@@ -60,6 +83,17 @@ pub struct SysInfoRequestArchInfo {
     /// This is a generic version, intended to differentiate between similar targets sharing the same arch (IE. i386 vs. i686, or ABI microarchitecture versions of x86_64).
     /// This may be different from vendor-specific processor versions.
     pub arch_version: u32,
+}
+
+impl SysInfoRequestArchInfo {
+    pub const INIT: Self = Self {
+        head: ExtendedOptionHead {
+            ty: SYSINFO_REQUEST_ARCH_INFO,
+            ..ExtendedOptionHead::ZERO
+        },
+        arch_type: Uuid::NIL,
+        arch_version: 0,
+    };
 }
 
 /// Requests computer name information
@@ -78,29 +112,42 @@ pub struct SysInfoRequestComputerName {
     pub sys_label: KStrPtr,
 }
 
+impl SysInfoRequestComputerName {
+    pub const INIT: Self = Self {
+        head: ExtendedOptionHead {
+            ty: SYSINFO_REQUEST_COMPUTER_NAME,
+            ..ExtendedOptionHead::ZERO
+        },
+        hostname: KStrPtr::empty(),
+        sys_id: Uuid::NIL,
+        sys_display_name: KStrPtr::empty(),
+        sys_label: KStrPtr::empty(),
+    };
+}
+
 pub mod arch_info {
     use super::SysInfoRequestArchInfo;
     use crate::uuid::{parse_uuid, Uuid};
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating x86-64 (64-bit x86 processors).
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set to the microarch version known to be supported, or `0` if the microarch version cannot be determined
     pub const ARCH_TYPE_X86_64: Uuid = parse_uuid("52aa8be1-822d-502c-8309-cf4d785ad524");
 
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating 32-bit x86 (IA-32).
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set as follows:
     /// * 3: Processor equivalent to the Intel i386 Processor or within 3rd Generation.
     /// * 4: Processor equivalent to the Intel i486 Processor or within 4th Generation.
     /// * 5: Processor equivalent to the Intel Pentium Processor or within the 5th Generation.
     /// * 6: Processor equivalent to the Intel Pentium Pro Processor or within the 6th Generation.
     /// * 7: Processor equivalent to the Intel Pentium 4 Processor or newer (including 32-bit Kernels running on 64-bit x86 processors)
-    /// 
+    ///
     /// ## Notes
     /// The `arch_version` value will never be set below 3, as that indicates a 16-bit processor, rather than a 32-bit processor.
-    /// Additionally, the standard Lilium kernel will not set this below 6, as the minimum supported processor for 32-bit x86 is the Pentium Pro 
+    /// Additionally, the standard Lilium kernel will not set this below 6, as the minimum supported processor for 32-bit x86 is the Pentium Pro
     ///  (however, a 3rd party kernel or emulator that complies with the SCI may return a smaller value).
-    /// 
-    /// The value of `arch_version` is such that the Compiler Target according to the [LCCC Project](https://github.com/lccc-project/lccc) given by `i{arch_version}86-pc-lilium-standard` 
+    ///
+    /// The value of `arch_version` is such that the Compiler Target according to the [LCCC Project](https://github.com/lccc-project/lccc) given by `i{arch_version}86-pc-lilium-standard`
     ///  will generate code that is correct for the current target.
     pub const ARCH_TYPE_X86_IA_32: Uuid = parse_uuid("84d2de8d-00e5-55bd-a65c-e28a842c2778");
     pub const ARCH_VERSION_X86_IA_32_386: u32 = 3;
@@ -109,23 +156,23 @@ pub mod arch_info {
     pub const ARCH_VERSION_X86_IA_32_686: u32 = 6;
     pub const ARCH_VERSION_X86_IA_32_P4: u32 = 7;
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating Clever-ISA.
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set to the major version of the Clever-ISA Specification known to be implemented.
     pub const ARCH_TYPE_CLEVER_ISA: Uuid = parse_uuid("311dbdf0-32e5-5e7f-a2df-3d822c137b68");
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating 32-bit ARM
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the ARM Specification known to be implemented.
     pub const ARCH_TYPE_ARM32: Uuid = parse_uuid("691cb76d-a4d5-5639-92b6-8e890ff6d09e");
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating Aarch64
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the ARM Specification known to be implemented. This value will never be less than 8 (since ARMv8 is the first version to include the Aarch64 instruction set)
     pub const ARCH_TYPE_AARCH64: Uuid = parse_uuid("5c8fc578-f44d-5c7d-91cf-4a9446466f1a");
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating 32-bit RISC-V.
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the RISC-V specification implemented
     pub const ARCH_TYPE_RISCV32: Uuid = parse_uuid("394463df-b66a-5f10-a970-a4bdda21c80e");
     /// [`SysInfoRequestArchInfo::arch_type`] value indicating 64-bit RISC-V.
-    /// 
+    ///
     /// [`SysInfoRequestArchInfo::arch_version`] is set to the version of the RISC-V specification implemented
     pub const ARCH_TYPE_RISCV64: Uuid = parse_uuid("d6129403-1104-5d03-8b4c-1176fc9f17fd");
 }
@@ -144,6 +191,20 @@ pub struct SysInfoRequestPhysicalInfo {
     pub discrete_processor_count: u32,
 }
 
+pub const SYSINFO_REQUEST_PHYSICAL_INFO: Uuid = parse_uuid("f5601b29-da4a-5db7-b37f-b2518bbce903");
+
+impl SysInfoRequestPhysicalInfo {
+    pub const INIT: Self = Self {
+        head: ExtendedOptionHead {
+            ty: SYSINFO_REQUEST_PHYSICAL_INFO,
+            ..ExtendedOptionHead::ZERO
+        },
+        physical_core_count: 0,
+        logical_core_count: 0,
+        discrete_processor_count: 0,
+    };
+}
+
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
 pub struct SysInfoRequestAddressSpace {
@@ -157,10 +218,10 @@ pub struct SysInfoRequestAddressSpace {
     pub page_size: usize,
 }
 
-
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct SysInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
@@ -174,6 +235,7 @@ pub struct SysInfoRequestUnknown {
 ///   This bit should not be set by users, and does not have an associated constant. USI impls are not required to request this flag for requests it fulfills, and may clear it when set by the user.
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union SysInfoRequest {
     pub head: ExtendedOptionHead,
     pub os_version: SysInfoRequestOsVersion,
@@ -195,6 +257,7 @@ pub const SYSINFO_REQUEST_COMPUTER_NAME: Uuid = parse_uuid("82b314fe-0476-51ca-9
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct ProcInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
@@ -203,13 +266,13 @@ pub struct ProcInfoRequestUnknown {
 }
 
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-mod x86;
+pub mod x86;
 
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 pub use x86::ProcInfoArchRequest;
 
 #[cfg(any(target_arch = "clever"))]
-mod clever;
+pub mod clever;
 
 #[cfg(any(target_arch = "clever"))]
 pub use clever::ProcInfoArchRequest;
@@ -223,6 +286,7 @@ pub union ProcInfoArchRequest {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union ProcInfoRequest {
     pub head: ExtendedOptionHead,
     pub unknown: ProcInfoRequestUnknown,
@@ -230,7 +294,7 @@ pub union ProcInfoRequest {
 }
 
 unsafe extern "system" {
-    /// Obtains information about the OS.
+    /// Obtains information about the System (OS, Kernel, or CPU).
     /// Each information request is provided as a [`SysInfoRequest`]. The caller is responsibile for initializing the header of the request,
     ///  and if the request is recongized, the fields of the request are set by the kernel.
     ///
@@ -242,7 +306,21 @@ unsafe extern "system" {
     /// * [`SYSINFO_REQUEST_KVENDOR`] - requests Vendor information about the Kernel build
     /// * [`SYSINFO_REQUEST_ARCH_INFO`] - requests general processor architecture information
     ///
-    pub fn GetSystemInfo(reqs: KSlice<SysInfoRequest>) -> SysResult;
+    /// ## [`GetProcessorInfo`]
+    /// [`GetSystemInfo`] can be used to make information requests supported by [`GetProcessorInfo`].
+    /// Only some [`ProcInfoRequest`]s are supported in this manner and on a multicore system
+    ///
+    /// ## `INVALID_LENGTH`` strings
+    ///
+    /// Special behaviour is guaranteed for [`GetSystemInfo`] and [`GetProcessorInfo`] with [`KStrPtr`]s embedded in a request.
+    /// Before returning `INVALID_LENGTH` as a result of a `KStrPtr` field having an insufficient length, the following is guaranteed to hold:
+    /// * All other `KStrPtr`s in the same request will be fulfilled (written up to capacity with the total length put in the `len` field),
+    /// * All fields that don't contain either a `KStrPtr` or a `KSlice` are guaranteed to be filled,
+    ///
+    /// This allows for requests that may return multiple strings (such as [`SYSINFO_REQUEST_COMPUTER_NAME`]) to be used to only fill one string, or to read all direct values.
+    ///
+    pub unsafe fn GetSystemInfo(reqs: KSlice<SysInfoRequest>) -> SysResult;
 
-    pub fn GetProcessorInfo(proc_id: u32, reqs: KSlice<ProcInfoRequest>) -> SysResult;
+    /// Obtains information about a specific processor on the system
+    pub unsafe fn GetProcessorInfo(proc_id: u32, reqs: KSlice<ProcInfoRequest>) -> SysResult;
 }

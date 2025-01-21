@@ -1,8 +1,6 @@
 use core::ffi::{c_long, c_ulong, c_void};
 use core::mem::MaybeUninit;
 
-use bytemuck::Zeroable;
-
 use crate::uuid::parse_uuid;
 use crate::{sys::io::IOHandle, uuid::Uuid};
 
@@ -43,6 +41,7 @@ pub const FLAG_REPLACE_IMAGE: c_long = 0x40;
 /// Fallback type for [`CreateProcessOption`]
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct CreateProcessOptionRaw {
     /// The Header of the opton.
     pub header: ExtendedOptionHead,
@@ -92,6 +91,7 @@ pub struct CreateProcessOptionArgs {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union CreateProcessOption {
     /// The Header
     pub head: ExtendedOptionHead,
@@ -164,6 +164,7 @@ pub const MAP_KIND_ENCRYPTED: u32 = 3;
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct MapExtendedAttrRaw {
     pub header: ExtendedOptionHead,
     pub data: [MaybeUninit<u8>; 32],
@@ -207,24 +208,25 @@ impl MapExtendedAttrName {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union MapExtendedAttr {
     pub raw: MapExtendedAttrRaw,
     pub backing: MapExtendedAttrBacking,
     pub mapping_name: MapExtendedAttrName,
 }
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     /// Obtains a handle to the current process environment
-    pub fn GetCurrentEnvironment(hdl: *mut HandlePtr<EnvironmentMapHandle>) -> SysResult;
+    pub unsafe fn GetCurrentEnvironment(hdl: *mut HandlePtr<EnvironmentMapHandle>) -> SysResult;
     /// Reads the given environment handle, with a given variable name, and stores the result in the KStr pointed to by `*val_out`
-    pub fn GetEnvironmentVariable(
+    pub unsafe fn GetEnvironmentVariable(
         hdl: HandlePtr<EnvironmentMapHandle>,
         name: KStrCPtr,
         val_out: *mut KStrPtr,
     ) -> SysResult;
     /// Writes the given environment handle, with a given variable name and value.
-    pub fn SetEnvironmentVariable(
+    pub unsafe fn SetEnvironmentVariable(
         hdl: HandlePtr<EnvironmentMapHandle>,
         name: KStrCPtr,
         val: KStrCPtr,
@@ -370,5 +372,5 @@ unsafe extern "C" {
 
     /// Aborts the process. This will first call [`ExceptHandleSynchronous`][crate::sys::except::ExceptHandleSynchronous] with exception `466fbae6-be8b-5525-bd04-ee7153b74f55` (ProcessAbort),
     ///  then calls [`UnmangedException`][crate::sys::except::UnmanagedException] after USI registered handlers (including those registered via `signal`) return.
-    pub fn abort() -> !;
+    pub safe fn abort() -> !;
 }

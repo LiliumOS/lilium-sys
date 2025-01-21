@@ -35,8 +35,8 @@ pub const DEVICE_GROUP_RAND_DEVICES: u32 = 0x20;
 
 pub const ISOLATE_PROCESSES_EXPOSE_SELF: u32 = 0x1;
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     pub fn CreateNamespace(handle: *mut HandlePtr<NamespaceHandle>) -> SysResult;
     pub fn DisposeNamespace(handle: HandlePtr<NamespaceHandle>) -> SysResult;
 

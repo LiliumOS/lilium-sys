@@ -146,7 +146,7 @@ pub const HANDLE_TYPE_ENVMAP: c_ulong = 7;
 pub const SHARE_FLAG_UPGRADE_PRIVILEGED: u32 = 1;
 
 #[allow(improper_ctypes)]
-unsafe extern "C" {
+unsafe extern "system" {
     pub fn ShareHandle(
         shared_handle: *mut SharedHandlePtr,
         hdl: HandlePtr<Handle>,

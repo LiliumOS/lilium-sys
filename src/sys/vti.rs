@@ -17,7 +17,7 @@ pub union FaultInfo {
 pub struct VirtualizationCallbacks {
     pub fault_info_buf: *mut FaultInfo,
     pub callback_udata: *mut c_void,
-    pub callback_page_alloc: Option<unsafe extern "C" fn(*mut c_void, u64) -> *mut c_void>,
+    pub callback_page_alloc: Option<unsafe extern "system" fn(*mut c_void, u64) -> *mut c_void>,
     pub callback_fault:
-        Option<unsafe extern "C" fn(*mut c_void, u32, fault_info: *mut FaultInfo) -> u32>,
+        Option<unsafe extern "system" fn(*mut c_void, u32, fault_info: *mut FaultInfo) -> u32>,
 }

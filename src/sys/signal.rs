@@ -1,4 +1,4 @@
-use core::ffi::c_void;
+use core::{ffi::c_void, mem::MaybeUninit};
 
 use super::{
     handle::{Handle, HandlePtr},
@@ -7,45 +7,34 @@ use super::{
     thread::ThreadHandle,
 };
 
-#[repr(C)]
-pub struct SignalSet(pub [u64; 2]);
+/// The type for the handler parameter of the signal function.
+/// Note that per [`signal`], uses of this alias are expected to contain initialized memory only.
+pub type sig_t = MaybeUninit<unsafe extern "system" fn(i32) -> ()>;
 
-#[repr(C)]
-pub union SignalSourcePtr {
-    pub source_handle: HandlePtr<Handle>,
-    pub faulting_instr: *mut c_void,
-}
+pub const SIG_IGN: sig_t = unsafe { core::mem::transmute(-1isize) };
+pub const SIG_DFL: sig_t = unsafe { core::mem::transmute(-2isize) };
 
-#[repr(C)]
-pub union SignalAuxSource {
-    pub access_addr: *mut c_void,
-    pub decoded_opcode: u64,
-}
+unsafe extern "system" {
+    /// Updates the signal handler to the specified  action, and returns the current action.
+    /// Calling this function with a `null` (all 0 bytes) instead queries the handler without changing it
+    ///
+    /// # Safety
+    /// `action` must be a valid function pointer, null, or one of the `SIG_` constants (`SIG_IGN` or `SIG_DFL`).
+    /// In particular, `hdl` must not be uninitialized memory (but can be a function pointer with a broken validity or safety invariant)
+    /// The return value is guaranteed to be one of the above.
+    ///
+    /// # Interaction with exceptions API
+    /// Signals in Lilium are implemented as a wrapper arround exceptions.
+    /// In particular, `signal` is implemented by use of an exception hook in the in the standard usi libc.
+    /// The hook is installed at the latest the first time `signal` is called in a process.
+    /// The signal handler has all permissions that an exception hook (not exception handler) has, with the following caveats:
+    /// * It is valid to synchronously raise an exception in them. However, any hooks other than the hook installed by `signal` is
+    pub unsafe fn signal(sig: i32, action: sig_t) -> sig_t;
 
-#[repr(C)]
-pub struct SignalInformation {
-    pub explicit_source_thread: HandlePtr<ThreadHandle>,
-    pub source_ptr: SignalSourcePtr,
-    pub auxilary_source: SignalAuxSource,
-}
-
-pub const SIGNAL_INTERRUPT_FLAG: u32 = 0x01;
-pub const SIGNAL_GLOBAL_FLAG: u32 = 0x02;
-
-#[allow(improper_ctypes)]
-unsafe extern "C" {
-    pub fn SignalThread(th: HandlePtr<ThreadHandle>, signo: u32) -> SysResult;
-    pub fn SignalProcess(ph: HandlePtr<ProcessHandle>, signo: u32) -> SysResult;
-    pub fn SetSignalHandlingThread(th: HandlePtr<ThreadHandle>) -> SysResult;
-    pub fn SetSignalThreadFlags(flags: u32) -> SysResult;
-    pub fn ClearSignalThreadFlags(flags: u32) -> SysResult;
-
-    pub fn HandleSignals(
-        sighdl: Option<unsafe extern "C" fn(u32, *mut SignalInformation)>,
-        sigset: *const SignalSet,
-    ) -> SysResult;
-    pub fn BlockSignals(sigset: *const SignalSet) -> SysResult;
-    pub fn ResetSignals(sigset: *const SignalSet) -> SysResult;
-    pub fn LimitSignals(sigset: *const SignalSet) -> SysResult;
-    pub fn PendingSignals(sigset: *mut SignalSet) -> SysResult;
+    /// Raises the specified signal synchronously.
+    ///
+    /// ## Behaviour
+    /// This acts as though it calls [`ExceptHandleSynchronous`][super::except::ExceptHandleSynchronous] with the corresponding exception type.
+    /// Per ISO C `signal`, `
+    pub safe fn raise(sig: i32);
 }

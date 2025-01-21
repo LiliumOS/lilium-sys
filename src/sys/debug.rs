@@ -7,7 +7,6 @@ use super::{
     handle::{Handle, HandlePtr},
     kstr::KStrPtr,
     result::SysResult,
-    signal::{SignalInformation, SignalSet},
     thread::ThreadHandle,
 };
 
@@ -16,6 +15,7 @@ use super::{
 pub struct DebugHandle(Handle);
 
 #[repr(C)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct DebugMappingInfo {
     pub vaddr_lo: usize,
     pub vaddr_hi: usize,
@@ -25,8 +25,8 @@ pub struct DebugMappingInfo {
     pub backing_paddr: u64,
 }
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     /// Attaches a debugger to the given thread, and returns a handle to that debugger.
     ///
     ///
@@ -274,11 +274,16 @@ unsafe extern "C" {
     ///
     /// If `info_buf` does not point to suitable storage writable by the current process, `INVALID_MEMORY` is returned.
     ///
-    /// ## Notes
+    /// ## Buffer Validity
     ///
     /// If `info_buf` does not belong to a valid mapping when the syscall is made, `INVALID_MEMORY` is returned immediately.
     /// However, if it belongs to mapped memory at the time of the syscall, and is unmapped prior to being written by the kernel, this is not checked.
     /// This results in `SIGSEGV` being delivered to the thread.
+    ///
+    /// ## Breakpoints
+    ///
+    /// Breakpoint Traps are reported to [`DebugCaptureExceptions`] as Exception type `df1ddb62-49c5-560f-86ab-1910471570b1` (DebugTrap).
+    /// This exception is not reported to
     pub fn DebugCaptureExceptions(
         dh: HandlePtr<DebugHandle>,
         info_buf: *mut ExceptionInfo,

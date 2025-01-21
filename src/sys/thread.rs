@@ -19,13 +19,14 @@ pub struct ThreadStartContext {
     pub th_stack: *mut c_void,
     pub th_interal: *mut c_void,
     pub th_tlsbase: *mut c_void,
-    pub th_start: extern "C" fn(*mut c_void, HandlePtr<ThreadHandle>, *mut c_void),
+    pub th_start: extern "system" fn(*mut c_void, HandlePtr<ThreadHandle>, *mut c_void),
     #[doc(hidden)]
     pub __private: (),
 }
 
 #[derive(Copy, Clone)]
 #[repr(C, align(32))]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct ThreadStartOptionRaw {
     pub head: ExtendedOptionHead,
     pub payload: [MaybeUninit<u8>; 64],
@@ -33,13 +34,14 @@ pub struct ThreadStartOptionRaw {
 
 #[derive(Copy, Clone)]
 #[repr(C, align(32))]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union ThreadStartOption {
     pub head: ExtendedOptionHead,
     pub raw: ThreadStartOptionRaw,
 }
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     pub fn StartThread(
         tsc: *const ThreadStartContext,
         thout: *mut HandlePtr<ThreadHandle>,

@@ -4,7 +4,7 @@
 //! An `OK` (0) result is the most common success result, with positive values having per-syscall meaning documented on the syscall.
 //! The negative results are divided into the 5 main lilium subsystems, and general errors.
 //! (Note that syscalls belonging to a particular subsystem are not restricted to only errors from that subsystem)
-//! 
+//!
 //! ## Error Groups
 //! When multiple error conditions are simultaneously present, which error is returned is not specified.
 //! Generally, these errors would have an effective order that prevents this (for example, a String Pointer argument that points to unmapped memory would necessarily return `INVALID_MEMORY`,
@@ -26,7 +26,7 @@
 /// * A pointer argument refers to a mapping that was removed, or part of a mapping that was truncated, and no new mapping was created
 /// * A pointer argument refers to a handle, and this error was detected by the kernel
 /// * A pointer argument referred to a valid mapping but the operation to be performed was invalid on memory in that mapping (i.e. a write operation to a read-only page, or trying to execute a non-executable page)
-/// * A pointer argument has an alignment constraint that was violated, and this error is detected by the kernel. 
+/// * A pointer argument has an alignment constraint that was violated, and this error is detected by the kernel.
 /// * A pointer argument is valid for fewer bytes than was expected, and this error was detected by the kernel.
 /// * A pointer argument referred to valid memory that is reserved for the kernel (such as memory being modified by an asynchronous IO operation), and this error was detected by the kernel.
 ///
@@ -48,7 +48,7 @@
 /// When this error is returned, and the syscall accepts multiple mutable strings or slices, the behaviour is kernel and syscall dependant, but is either:
 /// * The function stops processing immediately after setting the length field for the failing string, and no further strings are modified,
 /// * The function continues processing up to a certain number of failures (which can be unbounded), and updates at least all string/slices with insufficient length fields.
-/// 
+///
 /// The function typically does not report how many insufficient length fields were updated in total.
 ///
 /// Regardless of the failure behaviour, if multiple mutable strings/slices are encountered,
@@ -70,9 +70,9 @@
 /// * Allocation for any page tables used to allocate virtual memory failed (note that this cause in particular may be the result of exhausting the threads `AllocateThreadKMem` resource limit)
 #define INSUFFICIENT_MEMORY (-11)
 
-/// Indicates that a system call number is invalid/unrecognized by the kernel, a system call operation is not supported in the current kernel build configuration, 
+/// Indicates that a system call number is invalid/unrecognized by the kernel, a system call operation is not supported in the current kernel build configuration,
 /// or platform restrictions prevented performing a given system call
-/// 
+///
 /// This differs from `INVALID_OPERATION` in that it specifically detects issues with the SCI function itself, rather than a specific operation requested to be performed by the SCI function.
 ///
 /// Note that some cases of platform restrictions may return `INVALID_OPERATION` instead.
@@ -119,15 +119,22 @@
 #define DEVICE_UNAVAILABLE (-0x209)
 /// An operation that refers to a path encountered a loop in resolving symbolic links
 #define LINK_RESOLUTION_LOOP (-0x20A)
+
+/// An operation would have orphaned one or more objects,
+/// at least removed the only path to a strong reference to the object
+#define ORPHANED_OBJECTS (-0x20B)
+
 /// An operation was performed on an object that was closed remotely, such as:
 /// * An write operation was performed on a pipe or FIFO object and the read end of the pipe was closed
 /// * A read or write operation to an IPC Connection or a socket, and the remote end of the connection was closed
 /// * A read or write operation to a socket, and the connection was interrupted
-#define CLOSED_REMOTELY (-0x20B)
+#define CLOSED_REMOTELY (-0x220)
 
 /// An operation was performed on an connection object, and the connection was interrupted or broken externally
-#define CONNECTION_INTERRUPTED (-0x20C)
+#define CONNECTION_INTERRUPTED (-0x221)
 
+/// A requested network address was not available
+#define ADDRESS_NOT_AVAILABLE (-0x222)
 
 // subsystem 3 (process) Error Codes
 
@@ -140,6 +147,5 @@
 
 /// Minimum privileges were required by a spawned process, and those privileges were not acquired
 #define PRIVILEGE_CHECK_FAILED (-0x302)
-
 
 // subsystem 4 (debug) Error Codes

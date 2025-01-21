@@ -12,8 +12,8 @@ pub struct ServerHandle(Handle);
 #[repr(C)]
 pub struct sockaddr {}
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     pub fn CreateServerSocket(servout: *mut HandlePtr<ServerHandle>) -> SysResult;
 
     pub fn ConnectAnon(

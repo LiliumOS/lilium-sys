@@ -3,6 +3,7 @@ use std::ffi::OsStr;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable)]
 pub struct KStrCPtr {
     pub str_ptr: *const u8,
     pub len: usize,
@@ -53,6 +54,7 @@ impl KStrCPtr {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable)]
 pub struct KStrPtr {
     pub str_ptr: *mut u8,
     pub len: usize,
@@ -94,6 +96,9 @@ pub struct KCSlice<T> {
     pub arr_ptr: *const T,
     pub len: usize,
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T> bytemuck::Zeroable for KCSlice<T> {}
 
 impl<T> Copy for KCSlice<T> {}
 impl<T> Clone for KCSlice<T> {
@@ -151,3 +156,6 @@ impl<T> KSlice<T> {
         unsafe { core::slice::from_raw_parts(self.arr_ptr, self.len) }
     }
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T> bytemuck::Zeroable for KSlice<T> {}

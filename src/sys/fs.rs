@@ -132,6 +132,7 @@ pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 /// An option for opening the file
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct UnknownFileOpenOption {
     /// The header
     pub head: ExtendedOptionHead,
@@ -140,6 +141,7 @@ pub struct UnknownFileOpenOption {
 }
 
 #[repr(C, align(32))]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union FileOpenOption {
     /// The Header: Must be present on all subfields
     pub head: ExtendedOptionHead,
@@ -199,8 +201,8 @@ pub const ACL_MODE_DENY: u32 = 1;
 pub const ACL_MODE_FORBID: u32 = 2;
 pub const ACL_MODE_INHERIT: u32 = 3;
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     /// Opens a new file handle with the given path
     pub fn OpenFile(
         hdl: *mut HandlePtr<FileHandle>,

@@ -80,3 +80,42 @@ impl<'a> ReadMemBuf<'a> {
         Ok(Self(unsafe { hdl.assume_init() }, PhantomData))
     }
 }
+
+unsafe impl<'a, 'b> AsHandle<'a, IOHandle> for ReadMemBuf<'b>
+where
+    'b: 'a,
+{
+    fn as_handle(&self) -> HandlePtr<IOHandle> {
+        self.0
+    }
+}
+
+#[cfg(feature = "std")]
+mod std_impl {
+    use super::*;
+    use ::std::io as sio;
+
+    /// A type that provides advisory information about whether or not random access can interfere with non-random access operations.
+    pub enum RandomAccessBehaviour {
+        /// Indicates
+        Seek,
+    }
+
+    /// A trait for streams that can have their size queried without interfering with their position
+    pub trait StreamSize {
+        /// Determines the size of the stream, or returns an error.
+        /// Unlike [`Seek::stream_len`][sio::Seek::stream_len],  
+        fn data_size(&self) -> sio::Result<u128>;
+    }
+
+    /// A trait for streams that can be read from an arbitrary position.
+    /// Note: depending on the stream configuration, this can have inconsistent effects when combined with [`Read`][sio::Read]
+    pub trait ReadRandomAccess: sio::Read + sio::Seek {
+        fn read_from(&self, buf: &mut [u8], base: u128) -> sio::Result<usize>;
+
+        fn read_exact_from(&self, buf: &mut [u8], base: u128) -> io::Result<()> {}
+    }
+}
+
+#[cfg(feature = "std")]
+pub use self::std_impl::*;

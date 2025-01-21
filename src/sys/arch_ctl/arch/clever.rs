@@ -1,7 +1,5 @@
 use crate::sys::option::ExtendedOptionHead;
 
-use bytemuck::Zeroable;
-
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
 pub union ArchConfigArchOption {

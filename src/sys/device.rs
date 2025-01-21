@@ -11,8 +11,7 @@
 use core::ffi::{c_long, c_ulong, c_void};
 
 use crate::{sys::permission::SecurityContext, uuid::Uuid};
-
-use self::udev::DeviceCommandParameter;
+use core::mem::MaybeUninit;
 
 #[cfg(doc)]
 use crate::sys::io::{CHAR_RANDOMACCESS, CHAR_READABLE, CHAR_SEEKABLE, CHAR_WRITABLE};
@@ -22,7 +21,8 @@ use super::{
     handle::{Handle, HandlePtr},
     io::IOHandle,
     isolation::NamespaceHandle,
-    kstr::{KCSlice, KStrCPtr, KStrPtr},
+    kstr::{KCSlice, KSlice, KStrCPtr, KStrPtr},
+    option::ExtendedOptionHead,
     result::SysResult,
 };
 
@@ -101,8 +101,39 @@ pub struct DeviceFeature {
     pub feature_options: u32,
 }
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+/// The Number of bytes for the body of a [`SysInfoRequest`] - large enough to store the larger of 8 pointers and 64 bytes.
+pub const DEVICE_COMMAND_BODY_SIZE: usize = if core::mem::size_of::<usize>() > 8 {
+    core::mem::size_of::<usize>() * 8
+} else {
+    64
+};
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub struct DeviceFunctionUnknown {
+    pub head: ExtendedOptionHead,
+    pub content: [MaybeUninit<u8>; DEVICE_COMMAND_BODY_SIZE],
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+pub union DeviceFunction {
+    pub head: ExtendedOptionHead,
+    unknown: DeviceFunctionUnknown,
+}
+
+pub const DEVICE_FUNCTION_MARKER_TY_SLICE_BUFFER: u32 = 0x01;
+pub const DEVICE_FUNCTION_MARKER_TY_HANDLE: u32 = 0x02;
+
+#[repr(C, align(32))]
+pub struct DeviceFunctionMarkers {
+    pub offset: usize,
+    pub ty: u32,
+    pub elem_size: usize,
+}
+
+#[expect(improper_ctypes)]
+unsafe extern "system" {
 
     /// Creates a new block device backed by `backing_hdl`, with the specified configuration.
     ///
@@ -140,19 +171,11 @@ unsafe extern "C" {
         cfg: *const BlockDeviceConfiguration,
         ns: HandlePtr<NamespaceHandle>,
     ) -> SysResult;
-    /// Removes the block device backed by `backing_hdl`, with the specific configuration
+    /// Removes the block device specified by `hdl`.
     ///
+    /// `hdl` must have the "DeregisterDevice"
     ///
-    ///
-    /// ## Errors
-    ///
-    /// If `backing_hdl` is not a valid `IOHandle`, returns `INVALID_HANDLE`.
-    ///
-    /// If `backing_hdl` was not previously used in a call to [`CreateBlockDevice`] or the device was subsequently removed by another call to this funciton,
-    ///  returns `INVALID_STATE`.
-    ///
-    ///
-    pub fn RemoveBlockDevice(backing_hdl: HandlePtr<IOHandle>) -> SysResult;
+    pub fn DeregisterDevice(hdl: HandlePtr<DeviceHandle>) -> SysResult;
     /// Creates a new character device, backed by a given `IOHandle`.
     ///
     /// Character devices are not seekable or random access - `backing_hdl` may be non-seekable (Does not have `CHAR_SEEKABLE`), and handles referring to it will not have the characteristics `CHAR_SEEKABLE` or `CHAR_RANDOM_ACCESS`, regardless of the underlying handle
@@ -181,19 +204,12 @@ unsafe extern "C" {
     /// If `id` is set to an explicit ID, and that id is already in use by a device within the device scope of the specified namespace, returns `ALREADY_EXISTS`.
     ///
     pub fn CreateCharDevice(
+        dev: *mut HandlePtr<DeviceHandle>,
         id: *mut Uuid,
         backing_hdl: HandlePtr<IOHandle>,
         cfg: *const CharDeviceConfiguration,
+        ns: HandlePtr<NamespaceHandle>,
     ) -> SysResult;
-    /// Removes the character device backed by `backing_hdl`.
-    /// ## Errors
-    ///
-    /// If `backing_hdl` is not a valid `IOHandle`, returns `INVALID_HANDLE`.
-    ///
-    /// If `backing_hdl` was not previously used in a call to [`CreateBlockDevice`] or the device was subsequently removed by another call to this funciton,
-    ///  returns `INVALID_STATE`.
-    ///
-    pub fn RemoveCharDevice(backing_hdl: HandlePtr<IOHandle>) -> SysResult;
 
     /// Opens a device by it's id, if the given device exists.
     ///
@@ -217,27 +233,11 @@ unsafe extern "C" {
         file: HandlePtr<FileHandle>,
     ) -> SysResult;
 
-    /// Issues a Command to a device. The supported commands are device specific, and the parameters for each command is command specific
-    pub fn IssueDeviceCommand(hdl: HandlePtr<DeviceHandle>, cmd: *const Uuid, ...) -> SysResult;
-
     pub fn MountFilesystem(
         resolution_base: HandlePtr<FileHandle>,
         path: KStrCPtr,
         devid: Uuid,
         opts: *const MountOptions,
-    ) -> SysResult;
-
-    pub fn RegisterDeviceCommand(
-        devid: *const Uuid,
-        cmdid: *mut Uuid,
-        callback: unsafe extern "C" fn(
-            cmdid: *const Uuid,
-            callctx: HandlePtr<SecurityContext>,
-            ...
-        ) -> SysResult,
-        callback_stack: *mut c_void,
-        sigtys: *const DeviceCommandParameter,
-        param_count: c_ulong,
     ) -> SysResult;
 
     /// Tests whether `hdl` supports the specified features,
@@ -253,8 +253,19 @@ unsafe extern "C" {
     /// Returns `INVALID_OPERATION` if any of the named features in `features` are supported, but not in the requested mode(s).
     ///
     /// Returns `PERMISSION` if any of the named features in `features` are Access Controlled and the Access Control checks are not marked as ignorable for that feature, the required right is not present in the handle, and permission is denied to the calling thread to obtain the required right.
-    pub fn TestDeviceFeature(
+    pub unsafe fn TestDeviceFeature(
         hdl: HandlePtr<DeviceHandle>,
         features: *const KCSlice<DeviceFeature>,
+    ) -> SysResult;
+
+    pub unsafe fn InvokeDeviceFunctions(
+        hdl: HandlePtr<DeviceHandle>,
+        functions: KSlice<DeviceFunction>,
+    ) -> SysResult;
+
+    pub unsafe fn RegisterDeviceFunction(
+        hdl: HandlePtr<DeviceHandle>,
+        fn_id: Uuid,
+        markers: KCSlice<DeviceFunctionMarkers>,
     ) -> SysResult;
 }

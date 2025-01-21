@@ -19,8 +19,8 @@ pub union ThreadOwner {
     pub owning_principal: Uuid,
 }
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     pub fn CreateSecurityContext(nctx: *mut HandlePtr<SecurityContext>) -> SysResult;
     pub fn CopySecurityContext(
         nctx: *mut HandlePtr<SecurityContext>,

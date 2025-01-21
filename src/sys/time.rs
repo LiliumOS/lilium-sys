@@ -11,6 +11,7 @@ use super::{device::DeviceHandle, handle::WideHandle, result::SysResult};
 /// The `seconds` are measured with a signed `i64`, so can measure durations in excess of +/-2.92e+11 years.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct Duration {
     /// The number of seconds the duration represents, between [-1<<63,(1<<63)-1)
     pub seconds: i64,
@@ -56,7 +57,8 @@ pub const CLOCK_EPOCH: Uuid = parse_uuid("c8baabaf-b534-3fa1-929e-6177713e93f4")
 /// The precision of this clock is unspecified, but shall be at least as precise as [`CLOCK_EPOCH`].
 pub const CLOCK_MONOTONIC: Uuid = parse_uuid("df95f5b1-bbb7-3562-8c7a-6c3ce0a5dd95");
 
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     ///
     /// Reads the current offset from the epoch, as a Duration, of the specified Clock.
     /// The epoch used for this function is the epoch of the clock.

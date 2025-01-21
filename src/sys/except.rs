@@ -18,6 +18,7 @@ pub struct ExceptionContextHandle(Handle);
 
 #[repr(C)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::Pod)]
 pub struct ExceptionStatusInfo {
     pub except_code: Uuid,
     pub except_info: u64,
@@ -39,6 +40,7 @@ pub struct ExceptionInfo {
 /// An option for opening the file
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub struct UnknownExceptHandlerOption {
     /// The header
     pub head: ExtendedOptionHead,
@@ -47,6 +49,7 @@ pub struct UnknownExceptHandlerOption {
 }
 
 #[repr(C, align(32))]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
 pub union ExceptHandlerOption {
     /// The Header: Must be present on all subfields
     pub head: ExtendedOptionHead,
@@ -67,7 +70,7 @@ pub struct ExceptHandlerOptionSetStack {
 pub type ExceptHandler =
     unsafe extern "system" fn(*mut ExceptionInfo, HandlePtr<ExceptionContextHandle>) -> !;
 
-#[allow(improper_ctypes)]
+#[expect(improper_ctypes)]
 unsafe extern "system" {
 
     /// Aborts the calling thread by reporting  `except` as having been recieved but not handled
@@ -157,6 +160,6 @@ unsafe extern "system" {
     /// However, it should be noted that asynchronous exceptions will enter the hooks, so
     pub fn except_hook(
         userdata: *mut c_void,
-        hook: unsafe extern "system" fn(*mut c_void, *const ExceptionInfo),
+        hook: unsafe extern "system" fn(*mut c_void, *const ExceptionInfo) -> isize,
     ) -> SysResult;
 }

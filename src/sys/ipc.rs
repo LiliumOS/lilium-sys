@@ -33,8 +33,8 @@ pub const FLAG_INTERRUPT_ON_CONNECT: c_long = 0x04;
 /// Value is just the SIG* constants shifted right by 3.
 pub const SIGNAL_ON_CONNECT_MASK: c_long = 0xF8;
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
     pub fn OpenIPCServer(
         flags: c_long,
         common_name: KStrCPtr,

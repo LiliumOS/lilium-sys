@@ -7,7 +7,6 @@ use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
-use bytemuck::Zeroable;
 
 use sptr::Strict;
 
@@ -64,28 +63,34 @@ impl FromRequest for OsVersion {
     unsafe fn find_strings<'a, 'b>(
         x: &'a mut sys::SysInfoRequest,
         init_arr: &'b mut [Option<&'a mut KStrPtr>],
-    ) -> &'b mut [&'a mut KStrPtr] { unsafe {
-        init_arr[0] = Some(&mut x.os_version.osvendor_name);
+    ) -> &'b mut [&'a mut KStrPtr] {
+        unsafe {
+            init_arr[0] = Some(&mut x.os_version.osvendor_name);
 
-        unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1) }
-    }}
-
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
-        let sys::SysInfoRequestOsVersion {
-            osvendor_name,
-            os_major,
-            os_minor,
-            ..
-        } = x.os_version;
-
-        let vendor = osvendor_name.as_str().to_string();
-
-        Self {
-            vendor,
-            major_version: os_major,
-            minor_version: os_minor,
+            unsafe {
+                core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1)
+            }
         }
-    }}
+    }
+
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+        unsafe {
+            let sys::SysInfoRequestOsVersion {
+                osvendor_name,
+                os_major,
+                os_minor,
+                ..
+            } = x.os_version;
+
+            let vendor = osvendor_name.as_str().to_string();
+
+            Self {
+                vendor,
+                major_version: os_major,
+                minor_version: os_minor,
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -102,30 +107,36 @@ impl FromRequest for KernelVendor {
     unsafe fn find_strings<'a, 'b>(
         x: &'a mut sys::SysInfoRequest,
         init_arr: &'b mut [Option<&'a mut KStrPtr>],
-    ) -> &'b mut [&'a mut KStrPtr] { unsafe {
-        init_arr[0] = Some(&mut x.kernel_vendor.kvendor_name);
+    ) -> &'b mut [&'a mut KStrPtr] {
+        unsafe {
+            init_arr[0] = Some(&mut x.kernel_vendor.kvendor_name);
 
-        unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1) }
-    }}
-
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
-        let sys::SysInfoRequestKernelVendor {
-            kvendor_name,
-            kernel_major,
-            kernel_minor,
-            build_id,
-            ..
-        } = x.kernel_vendor;
-
-        let vendor = kvendor_name.as_str().to_string();
-
-        Self {
-            vendor,
-            build_id,
-            major_version: kernel_major,
-            minor_version: kernel_minor,
+            unsafe {
+                core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 1)
+            }
         }
-    }}
+    }
+
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+        unsafe {
+            let sys::SysInfoRequestKernelVendor {
+                kvendor_name,
+                kernel_major,
+                kernel_minor,
+                build_id,
+                ..
+            } = x.kernel_vendor;
+
+            let vendor = kvendor_name.as_str().to_string();
+
+            Self {
+                vendor,
+                build_id,
+                major_version: kernel_major,
+                minor_version: kernel_minor,
+            }
+        }
+    }
 }
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -144,12 +155,14 @@ impl FromRequest for ArchInfo {
         &mut []
     }
 
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
-        Self {
-            arch_id: x.arch_info.arch_type,
-            version: x.arch_info.arch_version,
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+        unsafe {
+            Self {
+                arch_id: x.arch_info.arch_type,
+                version: x.arch_info.arch_version,
+            }
         }
-    }}
+    }
 }
 
 impl core::fmt::Debug for ArchInfo {
@@ -219,36 +232,42 @@ impl FromRequest for ComputerName {
     unsafe fn find_strings<'a, 'b>(
         x: &'a mut sys::SysInfoRequest,
         init_arr: &'b mut [Option<&'a mut KStrPtr>],
-    ) -> &'b mut [&'a mut KStrPtr] { unsafe {
-        let req = &mut x.computer_name;
+    ) -> &'b mut [&'a mut KStrPtr] {
+        unsafe {
+            let req = &mut x.computer_name;
 
-        init_arr[0] = Some(&mut req.hostname);
-        init_arr[1] = Some(&mut req.sys_display_name);
-        init_arr[2] = Some(&mut req.sys_label);
+            init_arr[0] = Some(&mut req.hostname);
+            init_arr[1] = Some(&mut req.sys_display_name);
+            init_arr[2] = Some(&mut req.sys_label);
 
-        unsafe { core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 3) }
-    }}
-
-    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self { unsafe {
-        let sys::SysInfoRequestComputerName {
-            hostname,
-            sys_display_name,
-            sys_label,
-            sys_id,
-            ..
-        } = x.computer_name;
-
-        let hostname = hostname.as_str().to_string();
-        let display_name = sys_display_name.as_str().to_string();
-        let label = sys_label.as_str().to_string();
-
-        Self {
-            hostname,
-            display_name,
-            label,
-            computer_id: sys_id,
+            unsafe {
+                core::slice::from_raw_parts_mut(init_arr.as_mut_ptr() as *mut &'a mut KStrPtr, 3)
+            }
         }
-    }}
+    }
+
+    unsafe fn from_request(x: &sys::SysInfoRequest) -> Self {
+        unsafe {
+            let sys::SysInfoRequestComputerName {
+                hostname,
+                sys_display_name,
+                sys_label,
+                sys_id,
+                ..
+            } = x.computer_name;
+
+            let hostname = hostname.as_str().to_string();
+            let display_name = sys_display_name.as_str().to_string();
+            let label = sys_label.as_str().to_string();
+
+            Self {
+                hostname,
+                display_name,
+                label,
+                computer_id: sys_id,
+            }
+        }
+    }
 }
 
 pub struct RequestBuilder {
@@ -274,7 +293,7 @@ impl RequestBuilder {
                 head: ExtendedOptionHead {
                     ty: T::REQ_ID,
                     flags: 0,
-                    ..Zeroable::zeroed()
+                    ..ExtendedOptionHead::ZERO
                 },
             };
 
@@ -316,7 +335,7 @@ impl RequestBuilder {
                 head: ExtendedOptionHead {
                     ty: T::REQ_ID,
                     flags: OPTION_FLAG_IGNORE,
-                    ..Zeroable::zeroed()
+                    ..ExtendedOptionHead::ZERO
                 },
             };
 

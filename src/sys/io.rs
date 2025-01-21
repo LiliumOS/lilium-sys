@@ -38,8 +38,8 @@ pub struct PollInfo {
     pub status: SysResult,
 }
 
-#[allow(improper_ctypes)]
-unsafe extern "C" {
+#[expect(improper_ctypes)]
+unsafe extern "system" {
 
     /// Thread Local handle that is initialized to the standard input stream by the standard library
     #[thread_local]

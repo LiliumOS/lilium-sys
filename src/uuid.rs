@@ -1,9 +1,8 @@
 use core::str::FromStr;
 
-use bytemuck::{Pod, Zeroable};
-
 #[repr(C, align(16))]
-#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Pod, Zeroable)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Uuid {
     pub minor: u64,
     pub major: u64,
