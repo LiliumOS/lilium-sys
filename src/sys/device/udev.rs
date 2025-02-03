@@ -4,6 +4,7 @@ use core::ffi::{c_ulong, c_void};
 
 use crate::sys::{
     handle::{Handle, HandlePtr},
+    result::SysResult,
     thread::ThreadHandle,
 };
 
