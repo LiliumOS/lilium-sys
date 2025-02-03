@@ -75,6 +75,11 @@ impl<T> MaybeValid<T> {
     pub const unsafe fn assume_valid(self) -> T {
         unsafe { self.0.assume_init() }
     }
+
+    /// Converts a [`MaybeValid<T>`] to a [`MaybeUninit<T>`]
+    pub const fn into_uninit(self) -> MaybeUninit<T> {
+        self.0
+    }
 }
 
 #[cfg(feature = "bytemuck")]

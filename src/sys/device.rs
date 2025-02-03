@@ -10,6 +10,8 @@
 
 use core::ffi::{c_long, c_ulong, c_void};
 
+use udev::DeviceInvocationContext;
+
 use crate::{sys::permission::SecurityContext, uuid::Uuid};
 use core::mem::MaybeUninit;
 
@@ -263,9 +265,16 @@ unsafe extern "system" {
         functions: KSlice<DeviceFunction>,
     ) -> SysResult;
 
+    /// Registers the current thread as a support provider for device function `fn_id`.
+    /// When the function is invoked, the exception `DeviceFunction` is thrown with `data` pointing to `ctx_buffer` which is populated before the handler is invoked.
+    ///
+    /// `ctx_buffer` is only valid within the exception handler,
+    ///  but is guaranteed not to be overwritten during (each invocation is separated such that resuming from one handler will synchronize with the next incoming exception).
+    ///
+    /// On any given device
     pub unsafe fn RegisterDeviceFunction(
         hdl: HandlePtr<DeviceHandle>,
         fn_id: Uuid,
-        markers: KCSlice<DeviceFunctionMarkers>,
+        ctx_buffer: *mut DeviceInvocationContext,
     ) -> SysResult;
 }

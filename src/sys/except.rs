@@ -70,6 +70,15 @@ pub struct ExceptHandlerOptionSetStack {
 pub type ExceptHandler =
     unsafe extern "system" fn(*mut ExceptionInfo, HandlePtr<ExceptionContextHandle>) -> !;
 
+/// Return value from a registered exception hook, that indicates that t
+pub const EXCEPT_HOOK_CONTINUE: isize = 0;
+
+pub const EXCEPT_HOOK_RESUME: isize = 1;
+/// Return value from a registered exception hook, that indicates that further hooks should be exceuted, but after resolving the last hook (that does not return [`EXCEPT_HOOK_ABORT`]),
+///  resume from the
+pub const EXCEPT_HOOK_OK: isize = 2;
+pub const EXCEPT_HOOK_ABORT: isize = -1;
+
 #[expect(improper_ctypes)]
 unsafe extern "system" {
 
