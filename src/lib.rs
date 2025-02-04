@@ -30,7 +30,7 @@ pub mod os;
 pub mod process;
 #[cfg(feature = "api")]
 pub mod random;
-#[cfg(feature = "api")]
+#[cfg(feature = "error-enum")]
 pub mod result;
 #[cfg(feature = "api")]
 pub mod security;
