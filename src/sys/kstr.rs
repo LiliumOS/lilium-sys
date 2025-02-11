@@ -3,7 +3,7 @@ use std::ffi::OsStr;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct KStrCPtr {
     pub str_ptr: *const u8,
     pub len: usize,
@@ -54,7 +54,7 @@ impl KStrCPtr {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct KStrPtr {
     pub str_ptr: *mut u8,
     pub len: usize,

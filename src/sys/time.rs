@@ -11,7 +11,7 @@ use super::{device::DeviceHandle, handle::WideHandle, result::SysResult};
 /// The `seconds` are measured with a signed `i64`, so can measure durations in excess of +/-2.92e+11 years.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub struct Duration {
     /// The number of seconds the duration represents, between [-1<<63,(1<<63)-1)
     pub seconds: i64,

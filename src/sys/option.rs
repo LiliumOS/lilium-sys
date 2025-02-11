@@ -4,7 +4,7 @@ use crate::uuid::Uuid;
 /// This is common to all extended option types
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::Pod)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 pub struct ExtendedOptionHead {
     /// The type of the option
     pub ty: Uuid,

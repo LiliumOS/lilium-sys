@@ -113,7 +113,9 @@ mod std_impl {
     pub trait ReadRandomAccess: sio::Read + sio::Seek {
         fn read_from(&self, buf: &mut [u8], base: u128) -> sio::Result<usize>;
 
-        fn read_exact_from(&self, buf: &mut [u8], base: u128) -> io::Result<()> {}
+        fn read_exact_from(&self, buf: &mut [u8], base: u128) -> sio::Result<()> {
+            todo!()
+        }
     }
 }
 

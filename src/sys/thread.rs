@@ -3,6 +3,8 @@ use core::{
     mem::MaybeUninit,
 };
 
+use bytemuck::AnyBitPattern;
+
 use super::{
     handle::*,
     kstr::{KCSlice, KStrCPtr, KStrPtr},
@@ -26,15 +28,21 @@ pub struct ThreadStartContext {
 
 #[derive(Copy, Clone)]
 #[repr(C, align(32))]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct ThreadStartOptionRaw {
     pub head: ExtendedOptionHead,
     pub payload: [MaybeUninit<u8>; 64],
 }
 
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for ThreadStartOptionRaw {}
+
 #[derive(Copy, Clone)]
 #[repr(C, align(32))]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
 pub union ThreadStartOption {
     pub head: ExtendedOptionHead,
     pub raw: ThreadStartOptionRaw,

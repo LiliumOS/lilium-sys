@@ -8,11 +8,14 @@ use super::{
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct ArchConfigUnknownOption {
     pub header: ExtendedOptionHead,
     pub payload: [MaybeUninit<u8>; 32],
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for ArchConfigUnknownOption {}
 
 mod arch {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -36,7 +39,11 @@ mod arch {
 pub use arch::*;
 
 #[repr(C, align(32))]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
+#[derive(Copy, Clone)]
 pub union ArchConfigOption {
     /// The Header of the [`ArchConfigOption`].
     ///

@@ -221,13 +221,17 @@ pub struct SysInfoRequestAddressSpace {
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct SysInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
     /// The body of the request, content depends on the type.
     pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for SysInfoRequestUnknown {}
+
 /// Option struct for obtaining information about the kernel
 ///
 /// Additional extended option flags:
@@ -235,7 +239,10 @@ pub struct SysInfoRequestUnknown {
 ///   This bit should not be set by users, and does not have an associated constant. USI impls are not required to request this flag for requests it fulfills, and may clear it when set by the user.
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
 pub union SysInfoRequest {
     pub head: ExtendedOptionHead,
     pub os_version: SysInfoRequestOsVersion,
@@ -257,13 +264,16 @@ pub const SYSINFO_REQUEST_COMPUTER_NAME: Uuid = parse_uuid("82b314fe-0476-51ca-9
 /// Fallback type to represent unknown requests
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct ProcInfoRequestUnknown {
     /// The Header of the request
     pub head: ExtendedOptionHead,
     /// The body of the request, content depends on the type.
     pub body: [MaybeUninit<u8>; SYS_INFO_REQUEST_BODY_SIZE],
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for ProcInfoRequestUnknown {}
 
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 pub mod x86;
@@ -286,7 +296,10 @@ pub union ProcInfoArchRequest {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
 pub union ProcInfoRequest {
     pub head: ExtendedOptionHead,
     pub unknown: ProcInfoRequestUnknown,

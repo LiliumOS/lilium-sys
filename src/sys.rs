@@ -4,6 +4,7 @@
 pub mod arch_ctl;
 pub mod debug;
 pub mod device;
+pub mod error;
 pub mod except;
 pub mod fs;
 pub mod handle;

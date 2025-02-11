@@ -15,7 +15,8 @@ use super::{
 pub struct DebugHandle(Handle);
 
 #[repr(C)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
+#[derive(Copy, Clone)]
 pub struct DebugMappingInfo {
     pub vaddr_lo: usize,
     pub vaddr_hi: usize,

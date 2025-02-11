@@ -132,7 +132,7 @@ pub use super::io::{MODE_ASYNC, MODE_BLOCKING, MODE_NONBLOCKING};
 /// An option for opening the file
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct UnknownFileOpenOption {
     /// The header
     pub head: ExtendedOptionHead,
@@ -140,8 +140,15 @@ pub struct UnknownFileOpenOption {
     pub tail: [MaybeUninit<u8>; 64],
 }
 
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for UnknownFileOpenOption {}
+
 #[repr(C, align(32))]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
+#[derive(Copy, Clone)]
 pub union FileOpenOption {
     /// The Header: Must be present on all subfields
     pub head: ExtendedOptionHead,

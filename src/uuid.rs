@@ -2,7 +2,7 @@ use core::str::FromStr;
 
 #[repr(C, align(16))]
 #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::Pod)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 pub struct Uuid {
     pub minor: u64,
     pub major: u64,

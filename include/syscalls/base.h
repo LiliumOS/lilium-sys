@@ -86,3 +86,7 @@
 #define SYS_ExceptGetStopAddr (72)
 
 #define SYS_ExceptGetRegister (73)
+
+#define SYS_GetLastErrorContext (96)
+#define SYS_AddErrorContext (97)
+#define SYS_ResetErrorContext (98)

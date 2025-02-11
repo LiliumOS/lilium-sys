@@ -18,7 +18,7 @@ pub struct ExceptionContextHandle(Handle);
 
 #[repr(C)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::Pod)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 pub struct ExceptionStatusInfo {
     pub except_code: Uuid,
     pub except_info: u64,
@@ -40,7 +40,7 @@ pub struct ExceptionInfo {
 /// An option for opening the file
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct UnknownExceptHandlerOption {
     /// The header
     pub head: ExtendedOptionHead,
@@ -48,8 +48,15 @@ pub struct UnknownExceptHandlerOption {
     pub tail: [MaybeUninit<u8>; 64],
 }
 
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for UnknownExceptHandlerOption {}
+
 #[repr(C, align(32))]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
+#[derive(Copy, Clone)]
 pub union ExceptHandlerOption {
     /// The Header: Must be present on all subfields
     pub head: ExtendedOptionHead,

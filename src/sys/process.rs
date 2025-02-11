@@ -41,13 +41,16 @@ pub const FLAG_REPLACE_IMAGE: c_long = 0x40;
 /// Fallback type for [`CreateProcessOption`]
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct CreateProcessOptionRaw {
     /// The Header of the opton.
     pub header: ExtendedOptionHead,
     /// The content of the option.
     pub data: [MaybeUninit<u8>; 32],
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for CreateProcessOptionRaw {}
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
@@ -91,7 +94,10 @@ pub struct CreateProcessOptionArgs {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
 pub union CreateProcessOption {
     /// The Header
     pub head: ExtendedOptionHead,
@@ -164,11 +170,14 @@ pub const MAP_KIND_ENCRYPTED: u32 = 3;
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 pub struct MapExtendedAttrRaw {
     pub header: ExtendedOptionHead,
     pub data: [MaybeUninit<u8>; 32],
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for MapExtendedAttrRaw {}
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
@@ -208,7 +217,10 @@ impl MapExtendedAttrName {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", bytemuck::Zeroable, bytemuck::AnyBitPattern)]
+#[cfg_attr(
+    feature = "bytemuck",
+    derive(bytemuck::AnyBitPattern)
+)]
 pub union MapExtendedAttr {
     pub raw: MapExtendedAttrRaw,
     pub backing: MapExtendedAttrBacking,
