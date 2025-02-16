@@ -2,11 +2,14 @@
 //!
 //! Many of the syscalls within it are high-privilege (typically requiring kernel permissions only available to `SYSTEM`) and can directly access the running kernel.
 //! Misuse can result in system instability.
+use core::mem::MaybeUninit;
+
 use super::{
     fs::FileHandle,
     handle::HandlePtr,
     kstr::{KCSlice, KStrCPtr},
     option::ExtendedOptionHead,
+    result::SysResult,
 };
 
 #[repr(C, align(32))]

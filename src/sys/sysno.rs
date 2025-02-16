@@ -1,9 +1,9 @@
 use super::result::SysResult;
 
 macro_rules! sysno_def{
-    {[subsys $subsys_name:ident] $(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:expr_2021)* } => {
+    {[#[cfg(feature = $feat_name:literal)] subsys $subsys_name:ident] $(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:expr_2021)* } => {
         $(#[$outer_meta])*
-        #[cfg(any(feature = ::core::stringify!($subsys_name), doc))]
+        #[cfg(any(feature = $feat_name, doc))]
         #[allow(non_upper_case_globals)]
         pub mod $subsys_name{
             $($(#[$meta])* pub const $name: usize = $val;)*
@@ -13,7 +13,7 @@ macro_rules! sysno_def{
 }
 with_builtin_macros::with_builtin! {
     let $file = include_from_root!("include/syscalls/base.h") in {
-        sysno_def!{[subsys base] $file}
+        sysno_def!{[#[cfg(feature = "base")] subsys base] $file}
     }
 }
 

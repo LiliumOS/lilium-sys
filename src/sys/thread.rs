@@ -3,8 +3,6 @@ use core::{
     mem::MaybeUninit,
 };
 
-use bytemuck::AnyBitPattern;
-
 use super::{
     handle::*,
     kstr::{KCSlice, KStrCPtr, KStrPtr},

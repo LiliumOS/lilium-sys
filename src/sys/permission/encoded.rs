@@ -50,13 +50,13 @@ pub enum PermissionKind {
 }
 
 #[cfg(feature = "bytemuck")]
-unsafe impl bytemuck::Zeroable for ResetWhat {}
+unsafe impl bytemuck::Zeroable for PermissionKind {}
 
 #[cfg(feature = "bytemuck")]
-unsafe impl bytemuck::NoUninit for ResetWhat {}
+unsafe impl bytemuck::NoUninit for PermissionKind {}
 
 #[cfg(feature = "bytemuck")]
-unsafe impl bytemuck::CheckedBitPattern for ResetWhat {
+unsafe impl bytemuck::CheckedBitPattern for PermissionKind {
     type Bits = u32;
 
     fn is_valid_bit_pattern(bits: &Self::Bits) -> bool {
@@ -122,13 +122,15 @@ unsafe impl bytemuck::CheckedBitPattern for SecurityContextInstruction {
     fn is_valid_bit_pattern(bits: &Self::Bits) -> bool {
         match bits {
             [0, _, _, _] => true,
-            [1, what, 0, 0] => ResetWhat::is_valid_bit_pattern(what),
+            [1, what, 0, 0] => ResetWhat::is_valid_bit_pattern(bytemuck::must_cast_ref(what)),
             [2 | 3 | 4, kind, perm, ctx_sel] => {
-                PermissionKind::is_valid_bit_pattern(kind)
-                    && ConstEnt::is_valid_bit_pattern(perm)
-                    && ConstEnt::is_valid_bit_pattern(ctx_sel)
+                PermissionKind::is_valid_bit_pattern(bytemuck::must_cast_ref(kind))
+                    && ConstEnt::is_valid_bit_pattern(bytemuck::must_cast_ref(perm))
+                    && ConstEnt::is_valid_bit_pattern(bytemuck::must_cast_ref(ctx_sel))
             }
-            [5 | 6 | 7, principal, 0, 0] => ConstEnt::is_valid_bit_pattern(principal),
+            [5 | 6 | 7, principal, 0, 0] => {
+                ConstEnt::is_valid_bit_pattern(bytemuck::must_cast_ref(principal))
+            }
             _ => false,
         }
     }

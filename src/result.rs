@@ -76,6 +76,7 @@ impl core::fmt::Display for Error {
             Error::Signaled => f.write_str("Exception Recieved"),
             Error::MappingInaccessible => f.write_str("Mapping Inaccessible"),
             Error::PrivilegeCheckFailed => f.write_str("Privilege Check Failed"),
+            Error::InterpError => f.write_str("Interpreter Error"),
         }
     }
 }
