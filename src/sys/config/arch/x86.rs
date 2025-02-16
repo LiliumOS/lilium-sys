@@ -2,15 +2,15 @@ use crate::sys::option::ExtendedOptionHead;
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-pub union ArchConfigArchOption {
-    unknown: super::super::ArchConfigUnknownOption,
-    pub require_extensions: ArchConfigRequireThreadExtensions,
+pub union SysConfigArchOption {
+    unknown: super::super::SysConfigUnknownOption,
+    pub require_extensions: SysConfigRequireThreadExtensions,
 }
 
 /// Allows enabling
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-pub struct ArchConfigRequireThreadExtensions {
+pub struct SysConfigRequireThreadExtensions {
     pub head: ExtendedOptionHead,
     /// Sets base extensions required by the thread.
     ///

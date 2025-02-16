@@ -61,11 +61,11 @@
 
 #define SYS_GetProcessorInfo (49)
 
-#define SYS_SetArchConfig (50)
+#define SYS_SetSysConfig (50)
 
-#define SYS_GetProvidedArchConfig (51)
+#define SYS_GetProvidedSysConfig (51)
 
-#define SYS_GetActiveArchConfig (52)
+#define SYS_GetActiveSysConfig (52)
 
 #define SYS_UnmanagedException (64)
 

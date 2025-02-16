@@ -2,14 +2,14 @@ use crate::sys::option::ExtendedOptionHead;
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-pub union ArchConfigArchOption {
-    unknown: super::super::ArchConfigUnknownOption,
-    pub require_extensions: ArchConfigRequireThreadExtensions,
+pub union SysConfigArchOption {
+    unknown: super::super::SysConfigUnknownOption,
+    pub require_extensions: SysConfigRequireThreadExtensions,
 }
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone, Zeroable)]
-pub struct ArchConfigThreadExtensions {
+pub struct SysConfigThreadExtensions {
     pub head: ExtendedOptionHead,
     /// The value of the cpuex2 register enabled - see the current register map.
     ///
