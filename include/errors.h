@@ -148,4 +148,7 @@
 /// Minimum privileges were required by a spawned process, and those privileges were not acquired
 #define PRIVILEGE_CHECK_FAILED (-0x302)
 
+/// A process being spawned failed to open the requested interpreter.
+#define INTERP_ERROR (-0x303)
+
 // subsystem 4 (debug) Error Codes

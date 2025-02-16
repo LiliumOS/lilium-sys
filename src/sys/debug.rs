@@ -26,6 +26,7 @@ pub struct DebugMappingInfo {
     pub backing_paddr: u64,
 }
 
+#[cfg(any(feature = "debug", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
     /// Attaches a debugger to the given thread, and returns a handle to that debugger.

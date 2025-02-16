@@ -144,10 +144,7 @@ pub struct UnknownFileOpenOption {
 unsafe impl bytemuck::AnyBitPattern for UnknownFileOpenOption {}
 
 #[repr(C, align(32))]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 #[derive(Copy, Clone)]
 pub union FileOpenOption {
     /// The Header: Must be present on all subfields
@@ -208,6 +205,7 @@ pub const ACL_MODE_DENY: u32 = 1;
 pub const ACL_MODE_FORBID: u32 = 2;
 pub const ACL_MODE_INHERIT: u32 = 3;
 
+#[cfg(any(feature = "io", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
     /// Opens a new file handle with the given path

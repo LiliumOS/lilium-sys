@@ -94,10 +94,7 @@ pub struct CreateProcessOptionArgs {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub union CreateProcessOption {
     /// The Header
     pub head: ExtendedOptionHead,
@@ -217,16 +214,14 @@ impl MapExtendedAttrName {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub union MapExtendedAttr {
     pub raw: MapExtendedAttrRaw,
     pub backing: MapExtendedAttrBacking,
     pub mapping_name: MapExtendedAttrName,
 }
 
+#[cfg(any(feature = "process", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
     /// Obtains a handle to the current process environment
@@ -292,6 +287,7 @@ unsafe extern "system" {
     /// * First, if the image is an ELF Executable* file that is appropriate for the architecture, then it is mapped into memory as though each `PT_LOAD` segment is used in a [`CreateMapping`] call
     /// * The interpreter for the image is then determined:
     ///     * If it is a ELF File, the content of the `PT_INTERP` segment, if any, is read and interpreted as a path, resolved by `resolution_base` if it is relative.
+    ///         * The open is performed as described in the [Object Lookup])(#object-lookup) section. If this open fails, [`INTERP_ERROR`][crate::sys::result::errors::INTERP_ERROR]
     ///     * If the file starts with an optional UTF-8 BOM, then the strings `#!!` or `#!` in ASCII followed by valid UTF-8 up to and including the first occurance of a `0x0a` byte in the file,
     ///   the interpreter is read from the remainder of the `\n` terminated line, resolved by `resolution_base` if it is relative.
     ///     * Otherwise, if the kernel supports custom format images, the supplier object is returned from a device command `17494569-c542-51f6-bf30-7154703b7f79` (ResolveImageInterpreter)

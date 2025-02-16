@@ -134,6 +134,7 @@ pub struct DeviceFunctionMarkers {
     pub elem_size: usize,
 }
 
+#[cfg(any(feature = "io", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
 

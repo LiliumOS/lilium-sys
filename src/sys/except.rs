@@ -52,10 +52,7 @@ pub struct UnknownExceptHandlerOption {
 unsafe impl bytemuck::AnyBitPattern for UnknownExceptHandlerOption {}
 
 #[repr(C, align(32))]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 #[derive(Copy, Clone)]
 pub union ExceptHandlerOption {
     /// The Header: Must be present on all subfields
@@ -86,6 +83,7 @@ pub const EXCEPT_HOOK_RESUME: isize = 1;
 pub const EXCEPT_HOOK_OK: isize = 2;
 pub const EXCEPT_HOOK_ABORT: isize = -1;
 
+#[cfg(feature = "base")]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
 

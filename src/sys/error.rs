@@ -59,6 +59,7 @@ unsafe impl bytemuck::Zeroable for ErrorContextEntry {}
 #[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::AnyBitPattern for ErrorContextEntry {}
 
+#[cfg(feature = "base")]
 unsafe extern "system" {
     /// Obtains the last error context stack.
     ///

@@ -145,7 +145,8 @@ pub const HANDLE_TYPE_ENVMAP: c_ulong = 7;
 /// Causes upgrade requests to skip privilege checks
 pub const SHARE_FLAG_UPGRADE_PRIVILEGED: u32 = 1;
 
-#[allow(improper_ctypes)]
+#[cfg(feature = "base")]
+#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn ShareHandle(
         shared_handle: *mut SharedHandlePtr,

@@ -39,15 +39,13 @@ unsafe impl bytemuck::AnyBitPattern for ThreadStartOptionRaw {}
 
 #[derive(Copy, Clone)]
 #[repr(C, align(32))]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub union ThreadStartOption {
     pub head: ExtendedOptionHead,
     pub raw: ThreadStartOptionRaw,
 }
 
+#[cfg(any(feature = "thread", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn StartThread(
@@ -55,18 +53,18 @@ unsafe extern "system" {
         thout: *mut HandlePtr<ThreadHandle>,
         options: KCSlice<ThreadStartOption>,
     ) -> SysResult;
-    pub fn ParkThread() -> SysResult;
+    pub safe fn ParkThread() -> SysResult;
     pub fn UnparkThread(th: HandlePtr<ThreadHandle>) -> SysResult;
-    pub fn YieldThread();
+    pub safe fn YieldThread();
     pub fn AwaitAddress(addr: *mut c_void) -> SysResult;
     pub fn NotifyOne(addr: *mut c_void) -> SysResult;
     pub fn NotifyAll(addr: *mut c_void) -> SysResult;
-    pub fn SetBlockingTimeout(dur: *const Duration);
+    pub fn SetBlockingTimeout(dur: *const Duration) -> SysResult;
     pub fn SleepThread(dur: *const Duration) -> SysResult;
-    pub fn PauseThread() -> SysResult;
+    pub safe fn PauseThread() -> SysResult;
     pub fn InterruptThread(th: HandlePtr<ThreadHandle>) -> SysResult;
-    pub fn Interrupted() -> SysResult;
-    pub fn ClearBlockingTimeout();
+    pub safe fn Interrupted() -> SysResult;
+    pub safe fn ClearBlockingTimeout();
     pub fn ThreadExit(thr: c_int) -> !;
     pub fn GetCurrentThread() -> HandlePtr<ThreadHandle>;
     pub fn GetTLSBaseAddr(th: HandlePtr<ThreadHandle>, addrout: *mut *mut c_void) -> SysResult;
@@ -79,6 +77,11 @@ unsafe extern "system" {
 
     pub fn SetThreadName(th: HandlePtr<ThreadHandle>, name: KStrCPtr) -> SysResult;
     pub fn GetThreadName(th: HandlePtr<ThreadHandle>, name: *mut KStrPtr) -> SysResult;
+
+    /// Sets the current thread to be the "control" thread of the current process.
+    /// When the control thread exits or is killed by an exception, each other
+    pub safe fn ControlProcessExit() -> SysResult;
+    pub safe fn ReleaseProcessExit() -> SysResult;
 
     pub fn tls_register_destructor(dtor: fn(*mut c_void), key: isize) -> SysResult;
 

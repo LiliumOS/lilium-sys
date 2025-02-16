@@ -3,6 +3,7 @@ use super::result::SysResult;
 macro_rules! sysno_def{
     {[subsys $subsys_name:ident] $(#![$outer_meta:meta])* $($(#[$meta:meta])* #define $name:ident $val:expr_2021)* } => {
         $(#[$outer_meta])*
+        #[cfg(any(feature = ::core::stringify!($subsys_name), doc))]
         #[allow(non_upper_case_globals)]
         pub mod $subsys_name{
             $($(#[$meta])* pub const $name: usize = $val;)*

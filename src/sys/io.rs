@@ -38,6 +38,7 @@ pub struct PollInfo {
     pub status: SysResult,
 }
 
+#[cfg(any(feature = "io", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
 

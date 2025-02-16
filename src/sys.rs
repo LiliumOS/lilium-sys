@@ -1,26 +1,37 @@
 //! Low-level interfaces to Lilium
 #![allow(unexpected_cfgs)] // Clever-ISA will be supported by lccc
 
-pub mod config;
-pub mod debug;
-pub mod device;
 pub mod error;
-pub mod except;
-pub mod fs;
 pub mod handle;
-pub mod info;
-pub mod io;
-pub mod ipc;
-pub mod isolation;
 pub mod kstr;
 pub mod option;
-pub mod permission;
-pub mod process;
-pub mod random;
 pub mod result;
-pub mod signal;
-pub mod socket;
 pub mod sysno;
+
+pub mod config;
+pub mod except;
+pub mod info;
+pub mod permission;
+
 pub mod thread;
+
+pub mod device;
+pub mod fs;
+pub mod io;
+pub mod random;
+pub mod socket;
 pub mod time;
+
+pub mod ipc;
+pub mod isolation;
+pub mod process;
+
+pub mod debug;
+
+pub mod kmgmt;
+
+#[cfg(any(feature = "libc", doc))]
+pub mod signal;
+
+#[cfg(any(feature = "vti", doc))]
 pub mod vti;

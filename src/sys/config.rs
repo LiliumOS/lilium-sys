@@ -51,6 +51,7 @@ pub union SysConfigOption {
     pub arch: SysConfigArchOption,
 }
 
+#[cfg(feature = "base")]
 unsafe extern "system" {
     /// Sets the current arch config. The ability set any particular config depends on the Arch, kernel support, and the particular CPU.
     ///

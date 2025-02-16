@@ -207,6 +207,7 @@ impl SysInfoRequestPhysicalInfo {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub struct SysInfoRequestAddressSpace {
     /// The header of the request
     pub head: ExtendedOptionHead,
@@ -216,6 +217,28 @@ pub struct SysInfoRequestAddressSpace {
     pub max_mapping_addr: usize,
     /// The Page Granularity
     pub page_size: usize,
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
+pub struct SysInfoRequestSupportedSubsystem {
+    /// The Header of the request
+    pub head: ExtendedOptionHead,
+    /// The version of the subsystem.
+    /// The exact value of this depends on the subsystem queried.
+    pub subsys_version: u64,
+
+    /// The number of the subsystem for this supported subsystem.
+    ///
+    /// The base number for syscalls is this number `<<12`, and the base number for error numbers is this number `<<8`, and negated.
+    ///
+    /// This number is guaranteed to never exceed 2^20.
+    pub subsystem_no: u16,
+    /// The maximum syscall number supported (within the syscall region allocated to the subsystem)
+    ///
+    /// Note that it is not guaranteed that every syscall in the allocated region will be supported by the subsystem
+    pub max_sysno: u16,
 }
 
 /// Fallback type to represent unknown requests
@@ -239,10 +262,7 @@ unsafe impl bytemuck::AnyBitPattern for SysInfoRequestUnknown {}
 ///   This bit should not be set by users, and does not have an associated constant. USI impls are not required to request this flag for requests it fulfills, and may clear it when set by the user.
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub union SysInfoRequest {
     pub head: ExtendedOptionHead,
     pub os_version: SysInfoRequestOsVersion,
@@ -296,16 +316,14 @@ pub union ProcInfoArchRequest {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
-#[cfg_attr(
-    feature = "bytemuck",
-    derive(bytemuck::AnyBitPattern)
-)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub union ProcInfoRequest {
     pub head: ExtendedOptionHead,
     pub unknown: ProcInfoRequestUnknown,
     pub arch: ProcInfoArchRequest,
 }
 
+#[cfg(feature = "base")]
 unsafe extern "system" {
     /// Obtains information about the System (OS, Kernel, or CPU).
     /// Each information request is provided as a [`SysInfoRequest`]. The caller is responsibile for initializing the header of the request,

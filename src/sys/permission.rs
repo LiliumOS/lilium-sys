@@ -2,6 +2,8 @@ use core::ffi::{c_long, c_ulong};
 
 use crate::uuid::Uuid;
 
+pub mod encoded;
+
 use super::{
     handle::{Handle, HandlePtr, WideHandle},
     kstr::KStrCPtr,
@@ -19,6 +21,7 @@ pub union ThreadOwner {
     pub owning_principal: Uuid,
 }
 
+#[cfg(feature = "base")]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn CreateSecurityContext(nctx: *mut HandlePtr<SecurityContext>) -> SysResult;
