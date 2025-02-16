@@ -8,6 +8,22 @@ pub struct Uuid {
     pub major: u64,
 }
 
+#[cfg(feature = "uuid-crate")]
+impl From<uuid::Uuid> for Uuid {
+    fn from(value: uuid::Uuid) -> Self {
+        let (major, minor) = value.as_u64_pair();
+
+        Self { major, minor }
+    }
+}
+
+#[cfg(feature = "uuid-crate")]
+impl From<Uuid> for uuid::Uuid {
+    fn from(value: Uuid) -> Self {
+        Self::from_u64_pair(value.major, value.minor)
+    }
+}
+
 impl FromStr for Uuid {
     type Err = TryParseUuidError;
 
