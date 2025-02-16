@@ -44,15 +44,15 @@ unsafe extern "system" {
 
     /// Thread Local handle that is initialized to the standard input stream by the standard library
     #[thread_local]
-    pub static __HANDLE_IO_STDIN: HandlePtr<IOHandle>;
+    pub safe static __HANDLE_IO_STDIN: HandlePtr<IOHandle>;
 
     /// Thread Local handle that is initialized to the standard output stream by the standard library
     #[thread_local]
-    pub static __HANDLE_IO_STDOUT: HandlePtr<IOHandle>;
+    pub safe static __HANDLE_IO_STDOUT: HandlePtr<IOHandle>;
 
     /// Thread Local handle that is initialized to the standard error stream by the standard library
     #[thread_local]
-    pub static __HANDLE_IO_STDERR: HandlePtr<IOHandle>;
+    pub safe static __HANDLE_IO_STDERR: HandlePtr<IOHandle>;
 
     /// Reads up to `len` bytes from the given
     pub fn IORead(hdl: HandlePtr<IOHandle>, buf: *mut c_void, len: c_ulong) -> SysResult;
