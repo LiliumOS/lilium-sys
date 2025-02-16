@@ -1,7 +1,7 @@
 //! Low-level interfaces to Lilium
 #![allow(unexpected_cfgs)] // Clever-ISA will be supported by lccc
 
-pub mod arch_ctl;
+pub mod config;
 pub mod debug;
 pub mod device;
 pub mod error;
