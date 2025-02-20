@@ -35,3 +35,5 @@ pub mod signal;
 
 #[cfg(any(feature = "vti", doc))]
 pub mod vti;
+
+pub mod auxv;
