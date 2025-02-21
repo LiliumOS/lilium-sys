@@ -32,6 +32,7 @@ pub union KernelCfgOption {
 }
 
 #[cfg(any(feature = "kmgmt", doc))]
+#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub unsafe fn ConfigureKernel(cfg: KCSlice<KernelCfgOption>) -> SysResult;
     /// Opens a kernel module specified by `path`. If `path` is relative, it is resolved by `res_base` or the
