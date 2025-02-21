@@ -2,11 +2,16 @@ use core::ffi::{c_ulong, c_void};
 
 #[repr(C)]
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
+
 pub struct AuxvEnt {
     pub a_type: c_ulong,
     pub a_value: *mut c_void,
 }
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::Zeroable for AuxvEnt {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::Pod for AuxvEnt {}
 
 pub const AT_NULL: c_ulong = 0;
 pub const AT_IGNORE: c_ulong = 1;
