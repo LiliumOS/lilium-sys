@@ -1,5 +1,3 @@
-use std::io::Empty;
-
 use crate::uuid::Uuid;
 
 use super::{
