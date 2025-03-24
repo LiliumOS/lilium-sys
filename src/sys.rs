@@ -1,6 +1,9 @@
 //! Low-level interfaces to Lilium
 #![allow(unexpected_cfgs)] // Clever-ISA will be supported by lccc
 
+#[macro_use]
+pub(crate) mod def_option_types;
+
 pub mod error;
 pub mod handle;
 pub mod kstr;
@@ -35,5 +38,8 @@ pub mod signal;
 
 #[cfg(any(feature = "vti", doc))]
 pub mod vti;
+
+#[cfg(all(feature = "link-usi", target_os = "lilium"))]
+mod link_usi;
 
 pub mod auxv;

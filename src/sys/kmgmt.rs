@@ -31,6 +31,20 @@ pub union KernelCfgOption {
     pub unknown: KernelCfgUnknownOption,
 }
 
+pub const SUBMODULE_LOADING_OPTION_FLAG_GLOBAL: u32 = 0x00000001;
+
+def_option_type! {
+    pub struct SubmoduleLoadingOptionFlags ("876ab526-e3e1-5691-9dd9-ef9ff636dee1") {
+        pub flags: u32,
+    }
+}
+
+def_option! {
+    pub union SubmoduleLoadingOption (64){
+        pub flags: SubmoduleLoadingOptionFlags,
+    }
+}
+
 #[cfg(any(feature = "kmgmt", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
@@ -44,12 +58,14 @@ unsafe extern "system" {
     /// A Kernel Module is a shared object file that is loaded in the context of the kernel.
     /// It can perform high-privilege actions, have direct access to attached devices, and interact with kernel data structures.
     ///
-    /// Kernel Modules are not portable between kernels (but might be compatible between different versions of the same kernel).
+    /// Kernel Modules are generally not portable between kernels (but might be compatible between different versions of the same kernel).
     /// Whether or not this is detected by the [`OpenKModule`] function is not specified.
     /// If detected, this is typically reported by an [`INTERP_ERROR`][crate::sys::result::errors::INTERP_ERROR] error.
     ///
     /// >[!WARNING]
     /// > There are few checks on kernel modules, and they run with the same capabilities as the kernel.
+    /// > Improper use of the function can lead to system instability or system crashes.
+    /// > Only load modules you want loaded.
     pub unsafe fn OpenKModule(res_base: HandlePtr<FileHandle>, path: KStrCPtr) -> SysResult;
 
     /// Closes the kernel module specified by `path` at `res_base`.
@@ -68,11 +84,16 @@ unsafe extern "system" {
     /// ## Unprivileged Threads
     ///
     /// A thread typically needs kernel permission `LOAD_MODULE` to call this function.
-    /// However certain subsystems can be regarded as "privileged". If `search_base` is null, then `name` can be recognized as a privileged subsystem for one of the following reasons:
+    /// However certain subsystems can be regarded as "privileged". `name` can be recognized as a privileged subsystem for one of the following reasons:
     /// * It's a privileged well-known subsystem,
     /// * It is a subsystem name which resolves to subsystem object in the standard search directory, and the file opened has the following properties:
     ///   * It is owned by `SYSTEM` (NIL UUID),
     ///   * It has an `InstallSecurityContext` stream, and
     ///   * The `InstallSecurityContext` stream has a [`GrantPermission`][crate::sys::permission::encoded::SecurityContextInstruction::GrantPermission] instruction that grants kernel permission "PRIVILEGED_SUBSYSTEM".
-    pub unsafe fn OpenSubsystem(name: KStrCPtr) -> SysResult;
+    ///
+    /// A call only can be made from an unprivileged thread if it does not set any [`SubmoduleLoadingOptionFlags`] (IE. an unprivileged thread may only load a subsystem in the context of the current process)
+    pub unsafe fn OpenSubsystem(
+        name: KStrCPtr,
+        options: KCSlice<SubmoduleLoadingOption>,
+    ) -> SysResult;
 }

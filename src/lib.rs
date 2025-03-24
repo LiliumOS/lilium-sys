@@ -5,7 +5,45 @@
     feature(io_error_more, io_error_inprogress)
 )]
 
-//! High and Low-level bindings to the PhantomOS kernel interfaces
+//! High and Low-level bindings to the Lilium kernel interfaces
+//!
+//! ## Features
+//! The following features are defined to configure available APIs:
+//! * `api`: Defines safe rust wrappers for system routines
+//! * `alloc`: Allows use of types that require an allocator
+//! * `std`: Allows use of types and operations that require the standard library
+//! * `error-enum`: Defines [`crate::result::Error`] and [`crate::result::Result<T>`] even if `api` is not enabled
+//! * `raw`: Defines all submodules of [`sys::sysno`] even if the corresponding subsystem isn't enabled
+//! * `core-subsys`: Enables all core subsystem features (`base`, `thread`, `io`, `process`, `debug`, and `kmgmt`)
+//! * `bytemuck`: Enables [`bytemuck`] trait implementations ([`Pod`][bytemuck::Pod], [`Zeroable`][bytemuck::Zeroable], [`AnyBitPattern`][bytemuck::AnyBitPattern], and [`NoUninit`][bytemuck::NoUninit])
+//! * `uuid`: Enables bidirectional conversions to and from [`crate::uuid::Uuid`] and [`::uuid::Uuid`]
+//!
+//! The following features are enabled by default:
+//! * `api`
+//! * `core-subsys`
+//!
+//! ### Subsystem Features
+//!
+//! Subsystems use features to control what routines are available.
+//!
+//! * `core`
+//! * `thread`
+//! * `io`
+//! * `process`
+//! * `debug`
+//! * `kmgmt`
+//!
+//! The following features for routines defined purely by the USI are also provided:
+//! * `libc`: Exposes routines defined by `libc`
+//! * `rtld`: Exposes routines defined by `libusi-rtld.so`
+//!
+//! If the `link-usi` feature is enabled, the corresponding modules are linked by a `#[link]` attribute.
+//!
+//! ### `unstable`` Features
+//!
+//! Features starting with `unstable` require nightly rust support and are exempt from semver guarantees:
+//! * `unstable-std-io_error_more`: When the `std` feature is also enabled, enables conversion from [`crate::result::Error`] to [`std::io::Error`]
+//!
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

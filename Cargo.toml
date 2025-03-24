@@ -20,7 +20,7 @@ bytemuck = { version = "1.14", features = [
 ], optional = true }
 cfg-if = "1.0.0"
 sptr = { version = "0.3.2", optional = true }
-uuid = { version = "1.13.1", optional = true }
+uuid = { version = "1.13.1", optional = true, default-features = false }
 
 [features]
 default = ["api", "core-subsys"]
@@ -30,9 +30,11 @@ unstable-std-io_error_more = []
 alloc = []
 api = ["dep:hashbrown", "dep:fxhash", "dep:sptr", "alloc", "error-enum"]
 error-enum = []
-usi-impl = []
+raw = []
+link-usi = []
 
 libc = []
+rtld = []
 core-subsys = ["base", "thread", "io", "process", "debug", "kmgmt"]
 base = []
 thread = []

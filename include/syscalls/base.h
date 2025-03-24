@@ -1,6 +1,6 @@
 
-/// The base subsystem is
-#define SUBSYSTEM_BASE (0)
+/// The base subsystem is subsystem 0
+#define SUBSYSTEM_BASE (0 << 12)
 
 #define SYS_ShareHandle (0)
 #define SYS_UnshareHandle (1)

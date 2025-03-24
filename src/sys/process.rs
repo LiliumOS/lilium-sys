@@ -214,6 +214,13 @@ impl MapExtendedAttrName {
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
+pub struct MapExtendedAttrAllowWritableText {
+    pub header: ExtendedOptionHead,
+    pub cookie: Uuid,
+}
+
+#[repr(C, align(32))]
+#[derive(Copy, Clone)]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
 pub union MapExtendedAttr {
     pub raw: MapExtendedAttrRaw,
@@ -367,6 +374,7 @@ unsafe extern "system" {
         mapping_base_addr: *mut c_void,
         page_count: c_long,
         new_map_attrs: u32,
+        map_ext: *const KCSlice<MapExtendedAttr>,
     ) -> SysResult;
 
     pub fn RemoveMapping(mapping_base_addr: *mut c_void, page_count: c_long) -> SysResult;
