@@ -4,6 +4,7 @@ use core::{
 };
 
 use super::{
+    except::{ExceptionInfo, ExceptionStatusInfo},
     handle::*,
     kstr::{KCSlice, KStrCPtr, KStrPtr},
     option::ExtendedOptionHead,
@@ -43,6 +44,33 @@ pub union ThreadStartOption {
     pub raw: ThreadStartOptionRaw,
 }
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
+pub struct JoinStatusExit {
+    /// The discriminant for the status. Always set to `0` for a [`JoinStatusExit`] (else non-zero)
+    /// This is also specifically set to all ones bits
+    pub discriminant: u64,
+    pub exit_code: c_ulong,
+    #[doc(hidden)]
+    pub __reserved: [c_ulong; (size_of::<u64>() - size_of::<c_ulong>()) / size_of::<c_ulong>()],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::AnyBitPattern))]
+pub union JoinStatus {
+    pub exit_code: JoinStatusExit,
+    pub exit_exception: ExceptionStatusInfo,
+}
+
+def_option_type! {
+    pub struct EventJoinThread("d898a750-04c4-5479-aa6d-6103d202ce28") {
+        pub target_thread: HandlePtr<ThreadHandle>,
+        pub status_or_exception: *mut JoinStatus,
+    }
+}
+
 #[cfg(any(feature = "thread", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
@@ -51,23 +79,13 @@ unsafe extern "system" {
         thout: *mut HandlePtr<ThreadHandle>,
         options: KCSlice<ThreadStartOption>,
     ) -> SysResult;
-    pub safe fn ParkThread() -> SysResult;
-    pub fn UnparkThread(th: HandlePtr<ThreadHandle>) -> SysResult;
     pub safe fn YieldThread();
-    pub fn AwaitAddress(addr: *mut c_void) -> SysResult;
-    pub fn NotifyOne(addr: *mut c_void) -> SysResult;
-    pub fn NotifyAll(addr: *mut c_void) -> SysResult;
-    pub fn SetBlockingTimeout(dur: *const Duration) -> SysResult;
-    pub fn SleepThread(dur: *const Duration) -> SysResult;
-    pub safe fn PauseThread() -> SysResult;
-    pub fn InterruptThread(th: HandlePtr<ThreadHandle>) -> SysResult;
-    pub safe fn Interrupted() -> SysResult;
-    pub safe fn ClearBlockingTimeout();
+
     pub fn ThreadExit(thr: c_int) -> !;
     pub fn GetCurrentThread() -> HandlePtr<ThreadHandle>;
     pub fn GetTLSBaseAddr(th: HandlePtr<ThreadHandle>, addrout: *mut *mut c_void) -> SysResult;
     pub fn SetTLSBaseAddr(th: HandlePtr<ThreadHandle>, addr: *mut c_void) -> SysResult;
-    pub fn JoinThread(th: HandlePtr<ThreadHandle>) -> SysResult;
+    pub fn JoinThread(th: HandlePtr<ThreadHandle>, status: *mut JoinStatus) -> SysResult;
     pub fn DetachThread(th: HandlePtr<ThreadHandle>) -> SysResult;
 
     pub fn SendHandle(toth: HandlePtr<ThreadHandle>, sendhdl: HandlePtr<Handle>) -> SysResult;

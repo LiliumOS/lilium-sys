@@ -119,6 +119,14 @@ unsafe extern "system" {
     pub fn IOJoinAll(join_array: *mut PollInfo, join_array_len: c_ulong) -> SysResult;
     pub fn IOPause(hdl: HandlePtr<IOHandle>) -> SysResult;
     pub fn IOResume(hdl: HandlePtr<IOHandle>) -> SysResult;
+    /// When an async I/O Operation completes on `hdl`, atomically writes the length to `len` and notifies it as though by [`NotifyAddress`][crate::sys::thread::NotifyAddress].
+    /// len must obey the constraints set by `NotifyAddress`
+    /// The `notify_mask` is set to `0` (notifies all threads)
+    /// # Errors
+    /// If `hdl` is not a valid handle, returns `INVALID_HANDLE``.
+    ///
+    /// Returns an error if `len` would be invalid for `NotifyAddress`
+    pub unsafe fn IONotify(hdl: HandlePtr<IOHandle>, len: *mut usize) -> SysResult;
 
     /// Restarts a blocking I/O Operation that was interupted or timed out.
     pub fn IORestart(hdl: HandlePtr<IOHandle>) -> SysResult;

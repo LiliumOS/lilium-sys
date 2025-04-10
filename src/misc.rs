@@ -63,7 +63,7 @@ impl<T> MaybeValid<T> {
 
     /// Constructs a [`MaybeValid<T>`] by assuming that [`MaybeUninit<T>`] contains an initialized (but not necessarily valid) value.
     ///
-    /// This is slightly more permissive than calling [`MaybeValid::new`] because it does not require
+    /// This is slightly more permissive than calling [`MaybeValid::new`] because it does not require `x` to be valid.
     pub const unsafe fn from_uninit_unchecked(x: MaybeUninit<T>) -> Self {
         Self(x)
     }

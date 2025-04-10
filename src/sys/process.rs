@@ -7,6 +7,7 @@ use crate::{sys::io::IOHandle, uuid::Uuid};
 use super::except::ExceptionStatusInfo;
 use super::kstr::KCSlice;
 use super::option::ExtendedOptionHead;
+use super::thread::JoinStatus;
 use super::{
     fs::FileHandle,
     handle::{Handle, HandlePtr},
@@ -228,6 +229,13 @@ pub union MapExtendedAttr {
     pub mapping_name: MapExtendedAttrName,
 }
 
+def_option_type! {
+    pub struct EventJoinProcess("71e3dc54-7047-59f4-aa69-d26b443e7434") {
+        pub handle: HandlePtr<ProcessHandle>,
+        pub status: *mut JoinStatus,
+    }
+}
+
 #[cfg(any(feature = "process", doc))]
 #[expect(improper_ctypes)]
 unsafe extern "system" {
@@ -336,18 +344,9 @@ unsafe extern "system" {
     ///
     /// A return of a value described below syncronizes-with the termination of all threads running in that process
     ///
-    /// If the process is terminated by a call to `ExitProcess` or by `ExitThread` called from the main thread,
-    ///  returns that value exactly.
+    /// The status is placed into `join_status` (see [`JoinThread`][super::thread::JoinThread])
     ///
-    /// If the process was terminated by an unmanaged exception, returns SIGNALED and sets `*termsiginfo` to information about the exception that caused the termination.
-    ///
-    /// If the process was terminated because the main thread was terminated by a call to `DestroyThread`, returns `KILLED`.
-    ///
-    ///
-    pub fn JoinProcess(
-        hdl: HandlePtr<ProcessHandle>,
-        termsiginfo: *mut ExceptionStatusInfo,
-    ) -> SysResult;
+    pub fn JoinProcess(hdl: HandlePtr<ProcessHandle>, join_status: *mut JoinStatus) -> SysResult;
 
     /// Detaches the given process from the handle
     pub fn DetachProcess(hdl: HandlePtr<ProcessHandle>) -> SysResult;

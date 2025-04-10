@@ -12,10 +12,12 @@ pub mod result;
 pub mod sysno;
 
 pub mod config;
+pub mod dispatch;
 pub mod except;
 pub mod info;
 pub mod permission;
 
+pub mod event;
 pub mod thread;
 
 pub mod device;

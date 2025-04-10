@@ -13,18 +13,6 @@ impl AsMut<OsStr> for str {
     }
 }
 
-impl AsRef<str> for OsStr {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl AsMut<str> for OsStr {
-    fn as_mut(&mut self) -> &mut str {
-        self.as_str_mut()
-    }
-}
-
 impl OsStr {
     pub fn new<S: AsRef<OsStr> + ?Sized>(x: &S) -> &OsStr {
         x.as_ref()
@@ -33,7 +21,13 @@ impl OsStr {
     pub fn from_mut<S: AsMut<OsStr> + ?Sized>(x: &mut S) -> &mut OsStr {
         x.as_mut()
     }
+
+    pub fn display(&self) -> Display {
+        Display(&self.0)
+    }
 }
+
+
 
 impl OsStr {
     #[inline]
@@ -56,3 +50,14 @@ impl OsStr {
         &mut self.0
     }
 }
+
+
+#[cfg(feature = "alloc")]
+mod alloc {
+    pub struct OsString(String);
+
+
+}
+
+#[cfg(feature = "alloc")]
+pub use alloc::*;

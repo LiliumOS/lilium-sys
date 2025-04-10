@@ -54,7 +54,10 @@ pub mod misc;
 
 pub mod uuid;
 
-#[cfg(feature = "api")]
+#[cfg(all(feature = "api", feature = "thread"))]
+pub mod atomic;
+
+#[cfg(all(feature = "api", feature = "io"))]
 pub mod fs;
 #[cfg(feature = "api")]
 pub mod handle;
@@ -64,9 +67,9 @@ pub mod io;
 pub mod kstr;
 #[cfg(feature = "api")]
 pub mod os;
-#[cfg(feature = "api")]
+#[cfg(all(feature = "api", feature = "process"))]
 pub mod process;
-#[cfg(feature = "api")]
+#[cfg(all(feature = "api", feature = "io"))]
 pub mod random;
 #[cfg(feature = "error-enum")]
 pub mod result;
@@ -76,7 +79,7 @@ pub mod security;
 #[cfg(feature = "api")]
 pub mod time;
 
-#[cfg(feature = "api")]
+#[cfg(all(feature = "api", feature = "thread"))]
 pub mod thread;
 
 #[cfg(feature = "api")]

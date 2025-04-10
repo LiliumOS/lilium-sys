@@ -78,6 +78,9 @@
 /// Note that some cases of platform restrictions may return `INVALID_OPERATION` instead.
 #define UNSUPPORTED_KERNEL_FUNCTION (-12)
 
+/// This is set when a potentially-blocking system call that is executed in a manner that expects it not to block
+#define KERNEL_FUNCTION_WOULD_BLOCK (-13)
+
 /// An enumeration operation was performed, but the enumeration state indicates a finished enumeration operation.
 #define FINISHED_ENUMERATE (-32)
 
@@ -92,6 +95,10 @@
 /// * The thread was terminated by `DestroyThread`
 /// * The process owning the thread was terminated by `SIGKILL`, while that thread is not being debugged.
 #define KILLED (-0x102)
+
+/// An operation that would block was detected to cause a deadlock.
+/// Alternatively, an operation that was expected to block for an event could not be notified.
+#define DEADLOCKED (-0x103)
 
 // subsystem 2 (io) Error Codes
 

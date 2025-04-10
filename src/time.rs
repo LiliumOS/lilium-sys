@@ -47,6 +47,10 @@ impl Duration {
 
         Self(dur)
     }
+
+    pub const fn into_system(self) -> sys::Duration {
+        self.0
+    }
 }
 
 impl AddAssign for Duration {
@@ -102,6 +106,28 @@ impl Sub for Duration {
     }
 }
 
+impl From<sys::Duration> for Duration {
+    fn from(value: sys::Duration) -> Self {
+        Self(value)
+    }
+}
+
+impl From<core::time::Duration> for Duration {
+    fn from(value: core::time::Duration) -> Self {
+        let nanos = value.subsec_nanos();
+        let seconds = value.as_secs();
+
+        if seconds > i64::MAX {
+            panic!("Too Long Duration")
+        }
+
+        Duration(sys::Duration {
+            seconds: seconds as i64,
+            nanos_of_second: nanos,
+        })
+    }
+}
+
 pub struct TimePoint<C>(sys::Duration, PhantomData<C>);
 
 impl<C> Copy for TimePoint<C> {}
@@ -144,6 +170,17 @@ impl<C> Ord for TimePoint<C> {
 impl<C> PartialOrd for TimePoint<C> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<std::time::SystemTime> for TimePoint<SystemClock> {
+    fn from(value: std::time::SystemTime) -> Self {
+        let dur = value
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .expect("Time before Unix Epoch??");
+
+        TimePoint(dur.into(), PhantomData)
     }
 }
 
@@ -254,6 +291,7 @@ impl<C> Sub for TimePoint<C> {
     }
 }
 
+#[cfg(feature = "io")]
 impl<C: Clock> TimePoint<C> {
     pub fn now() -> Result<Self> {
         let id = C::clock_uuid();
