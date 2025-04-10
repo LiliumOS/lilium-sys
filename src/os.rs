@@ -27,7 +27,13 @@ impl OsStr {
     }
 }
 
+pub struct Display<'a>(&'a str);
 
+impl core::fmt::Display for Display<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.0)
+    }
+}
 
 impl OsStr {
     #[inline]
@@ -51,12 +57,10 @@ impl OsStr {
     }
 }
 
-
 #[cfg(feature = "alloc")]
 mod alloc {
+    use ::alloc::string::String;
     pub struct OsString(String);
-
-
 }
 
 #[cfg(feature = "alloc")]

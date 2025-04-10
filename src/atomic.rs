@@ -27,7 +27,7 @@ pub enum WaitError<S> {
 /// Extension trait allowing wait/notify
 pub trait AtomicWaitEx: Sealed + Sized {
     type Scalar: Copy + Sized;
-    type Mask: Copy + Sized + BitAnd<Output = Self> + Not<Output = Self> = usize;
+    type Mask: Copy + Sized + BitAnd<Output = Self::Mask> + Not<Output = Self::Mask>;
     fn wait(&self, expected: Self::Scalar) -> Result<(), WaitError<Self::Scalar>>;
     fn wait_mask(
         &self,
@@ -99,6 +99,7 @@ impl Sealed for AtomicUsize {}
 
 impl AtomicWaitEx for AtomicUsize {
     type Scalar = usize;
+    type Mask = usize;
 
     fn wait(&self, mut expected: Self::Scalar) -> Result<(), WaitError<Self::Scalar>> {
         match Error::from_code(unsafe {
@@ -139,7 +140,7 @@ impl AtomicWaitEx for AtomicUsize {
     }
 
     fn notify_mask(&self, mask: Self::Mask, count: usize) -> usize {
-        let _ = unsafe { sys::NotifyAddress(self.as_ptr(), count, mask, KCSlice::empty()) };
+        let v = unsafe { sys::NotifyAddress(self.as_ptr(), count, mask, KCSlice::empty()) };
 
         v as usize
     }
@@ -149,6 +150,7 @@ impl<T> Sealed for AtomicPtr<T> {}
 
 impl<T> AtomicWaitEx for AtomicPtr<T> {
     type Scalar = *mut T;
+    type Mask = usize;
 
     fn wait(&self, expected: Self::Scalar) -> Result<(), WaitError<Self::Scalar>> {
         let mut expected = expected.addr();
@@ -176,7 +178,12 @@ impl<T> AtomicWaitEx for AtomicPtr<T> {
         }
 
         match Error::from_code(unsafe {
-            sys::AwaitAddress(self.as_ptr(), &mut expected, !mask, KCSlice::empty())
+            sys::AwaitAddress(
+                self.as_ptr().cast(),
+                core::ptr::from_mut(&mut expected).cast(),
+                !mask,
+                KCSlice::empty(),
+            )
         }) {
             Ok(()) => Ok(()),
             Err(Error::InvalidState) => Err(WaitError::UnexpectedValue(expected)),
@@ -187,13 +194,13 @@ impl<T> AtomicWaitEx for AtomicPtr<T> {
     }
 
     fn notify(&self, count: usize) -> usize {
-        let v = unsafe { sys::NotifyAddress(self.as_ptr(), count, 0, KCSlice::empty()) };
+        let v = unsafe { sys::NotifyAddress(self.as_ptr().cast(), count, 0, KCSlice::empty()) };
 
         v as usize
     }
 
     fn notify_mask(&self, mask: Self::Mask, count: usize) -> usize {
-        let _ = unsafe { sys::NotifyAddress(self.as_ptr(), count, mask, KCSlice::empty()) };
+        let v = unsafe { sys::NotifyAddress(self.as_ptr().cast(), count, mask, KCSlice::empty()) };
 
         v as usize
     }
@@ -205,8 +212,8 @@ impl<A: AtomicWaitEx> AtomicTimedWaitEx for A {
         expected: Self::Scalar,
         dur: impl Into<crate::time::Duration>,
     ) -> Result<(), WaitError<Self::Scalar>> {
-        let timeout = dur.into().into_sys();
-        let _ = unsafe { sys::SetBlockingTimeout(&timeout) };
+        let timeout: crate::time::Duration = dur.into();
+        let _ = unsafe { sys::SetBlockingTimeout(&timeout.into_system()) };
 
         self.wait(expected)
     }
@@ -217,8 +224,8 @@ impl<A: AtomicWaitEx> AtomicTimedWaitEx for A {
         mask: Self::Mask,
         dur: impl Into<crate::time::Duration>,
     ) -> Result<(), WaitError<Self::Scalar>> {
-        let timeout = dur.into().into_sys();
-        let _ = unsafe { sys::SetBlockingTimeout(&timeout) };
+        let timeout: crate::time::Duration = dur.into();
+        let _ = unsafe { sys::SetBlockingTimeout(&timeout.into_system()) };
 
         self.wait_mask(expected, mask)
     }

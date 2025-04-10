@@ -1,8 +1,10 @@
 use crate::uuid::Uuid;
 
 use super::{
+    handle::HandlePtr,
     kstr::{KCSlice, KSlice, KStrCPtr, KStrPtr},
     option::ExtendedOptionHead,
+    time::Duration,
 };
 
 pub trait EmptyVal {
@@ -20,6 +22,25 @@ macro_rules! def_empty_primitives {
 }
 
 def_empty_primitives!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+
+impl EmptyVal for Duration {
+    const EMPTY: Self = Duration {
+        seconds: 0,
+        nanos_of_second: 0,
+    };
+}
+
+impl<T> EmptyVal for HandlePtr<T> {
+    const EMPTY: Self = HandlePtr::null();
+}
+
+impl<T> EmptyVal for *mut T {
+    const EMPTY: Self = core::ptr::null_mut();
+}
+
+impl<T> EmptyVal for *const T {
+    const EMPTY: Self = core::ptr::null();
+}
 
 impl EmptyVal for Uuid {
     const EMPTY: Self = Uuid::NIL;

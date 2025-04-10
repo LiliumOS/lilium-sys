@@ -78,17 +78,23 @@ impl CommandResult {
         loop {
             let ret =
                 unsafe { crate::sys::process::JoinProcess(self.hdl, sigterminfo.as_mut_ptr()) };
+
+            let status = unsafe { sigterminfo.assume_init() };
             match crate::result::Error::from_code(ret) {
-                Ok(()) => break Ok(CommandStatus::Normal(ret as i32)), // Note: Lilium guarantees it will be a positive i32
-                Err(crate::result::Error::Signaled) => {
-                    break Ok(CommandStatus::UnmanagedException(unsafe {
-                        sigterminfo.assume_init()
-                    }))
-                }
-                Err(crate::result::Error::Killed) => break Ok(CommandStatus::Killed),
+                Ok(()) => {
+                    break match unsafe { status.exit_code.discriminant } {
+                        0 => Ok(CommandStatus::Normal(
+                            unsafe { status.exit_code.exit_code } as i32
+                        )),
+                        u64::MAX => Ok(CommandStatus::Killed),
+                        _ => Ok(CommandStatus::UnmanagedException(unsafe {
+                            status.exit_exception
+                        })),
+                    }
+                } // Note: Lilium guarantees it will be a positive i32
                 Err(crate::result::Error::Interrupted) => continue,
                 Err(crate::result::Error::Timeout) => {
-                    unsafe { crate::sys::thread::ClearBlockingTimeout() };
+                    crate::sys::event::ClearBlockingTimeout();
                     continue;
                 }
                 Err(e) => break Err(e),

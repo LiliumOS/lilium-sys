@@ -1,6 +1,13 @@
 use core::ffi::c_ulong;
 
-use super::kstr::KCSlice;
+use super::{
+    handle::HandlePtr,
+    kstr::{KCSlice, KSlice},
+    process::EventJoinProcess,
+    result::SysResult,
+    thread::{EventJoinThread, ThreadHandle},
+    time::Duration,
+};
 
 def_option! {
     pub union ThreadBlockingOption(64) {

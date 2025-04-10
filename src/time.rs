@@ -117,7 +117,7 @@ impl From<core::time::Duration> for Duration {
         let nanos = value.subsec_nanos();
         let seconds = value.as_secs();
 
-        if seconds > i64::MAX {
+        if seconds > i64::MAX as u64 {
             panic!("Too Long Duration")
         }
 
@@ -180,7 +180,9 @@ impl From<std::time::SystemTime> for TimePoint<SystemClock> {
             .duration_since(std::time::SystemTime::UNIX_EPOCH)
             .expect("Time before Unix Epoch??");
 
-        TimePoint(dur.into(), PhantomData)
+        let dur: Duration = dur.into();
+
+        TimePoint(dur.into_system(), PhantomData)
     }
 }
 
