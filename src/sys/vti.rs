@@ -10,6 +10,7 @@ use super::io::IOHandle;
 use super::kstr::KCSlice;
 use super::kstr::KSlice;
 use super::result::SysResult;
+use super::thread::ThreadHandle;
 
 pub mod arch {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -46,15 +47,38 @@ def_option_type! {
     }
 }
 
+def_option_type! {
+    pub struct VmConfigInMemory("7a1e1349-c0cd-5909-9647-8b9a8f6973b8") {
+        /// The start of the region used by the vti host
+        pub vmm_region_start: *mut c_void,
+        /// THe length (in pages) of the region used by the vti host
+        pub vmm_region_len: usize,
+        /// The access flags (like [`CreateMapping`][crate::sys::process::CreateMapping]) of the vmm memory in the guest memory space.
+        pub vmm_region_guest_access: u32,
+    }
+}
+
+pub const VMM_MODE_HYPERVISOR: i32 = -1;
+pub const VMM_MODE_SUPERVISOR: i32 = 0;
+
+def_option_type! {
+    pub struct VmConfigVirtualizeMode("acdeb37b-4ed6-52fd-b9bf-b6a17bc786ff") {
+        pub vmm_mode: i32,
+    }
+}
+
 def_option! {
     pub union VmConfigOption(64) {
         pub phys_resources: VmConfigPhysResources,
+        pub in_memory: VmConfigInMemory,
+        pub mode: VmConfigVirtualizeMode,
     }
 }
 
 pub const EXIT_REASON_VMCALL: u64 = 0x100000001;
 pub const EXIT_REASON_IOMTRAP: u64 = 0x100000002;
 pub const EXIT_REASON_IOPORT: u64 = 0x100000003;
+pub const EXIT_REASON_HWTRAP: u64 = 0x100000004;
 
 #[expect(
     improper_ctypes,
@@ -92,4 +116,5 @@ unsafe extern "system" {
 
     /// Traps accesses to the `IO` region
     pub unsafe fn TrapIoMem(vm: HandlePtr<VmHandle>, paddr: usize, size: usize) -> SysResult;
+
 }

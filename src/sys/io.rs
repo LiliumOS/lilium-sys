@@ -93,17 +93,33 @@ unsafe extern "system" {
         size: *mut u128,
     ) -> SysResult;
 
+    /// Reads from the stream backed by `hdl` into `buf`, starting from `file_base`.
+    /// `hdl` must be [`CHAR_SEEKABLE`].
+    /// If `hdl` is [`CHAR_RANDOMACCESS`], the seek position is not modified by this syscall. Otherwise the seek position is unspecified (after the syscall)
+    ///
+    /// Returns the number of bytes read, or `0` if `file_base` is out of bounds for the file
+    /// ## Errors
+    /// Same errors as [`IORead`] and:
+    /// * if `hdl` is not [`CHAR_SEEKABLE`] returns `UNSUPPORTED_OPERATION`
     pub fn IOReadRA(
         hdl: HandlePtr<IOHandle>,
         buf: *mut c_void,
         len: c_ulong,
-        file_base: c_ulong,
+        file_base: u64,
     ) -> SysResult;
+    /// Writes to the stream backed by `hdl` from `buf`, starting from `file_base`.
+    /// `hdl` must be [`CHAR_SEEKABLE`].
+    /// If `hdl` is [`CHAR_RANDOMACCESS`], the seek position is not modified by this syscall. Otherwise the seek position is unspecified (after the syscall)
+    ///
+    /// Returns the number of bytes read, or `0` if `file_base` is out of bounds for the file
+    /// ## Errors
+    /// Same errors as [`IORead`] and:
+    /// * if `hdl` is not [`CHAR_SEEKABLE`] returns `UNSUPPORTED_OPERATION`
     pub fn IOWriteRA(
         hdl: HandlePtr<IOHandle>,
         buf: *const c_void,
         len: c_ulong,
-        file_base: c_ulong,
+        file_base: u64,
     ) -> SysResult;
 
     pub fn GetIOCharacteristics(hdl: HandlePtr<IOHandle>) -> SysResult;

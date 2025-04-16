@@ -1,4 +1,7 @@
-use core::mem::{ManuallyDrop, MaybeUninit};
+use core::{
+    mem::{ManuallyDrop, MaybeUninit},
+    ptr::NonNull,
+};
 
 #[cfg(feature = "bytemuck")]
 use bytemuck::{AnyBitPattern, NoUninit, Zeroable};
@@ -107,6 +110,229 @@ unsafe impl<T: Copy + 'static> AnyBitPattern for MaybeValid<T> {}
 unsafe impl<T: NoUninit> NoUninit for MaybeValid<T> {}
 #[cfg(feature = "bytemuck")]
 unsafe impl<T> Zeroable for MaybeValid<T> {}
+
+macro_rules! impl_debug_int {
+    ($($ty:ty),*) => {
+        $(
+            impl core::fmt::Debug for MaybeValid<$ty> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v = unsafe { self.assume_valid() };
+                    v.fmt(f)
+                }
+            }
+            impl core::fmt::Debug for MaybeValid<core::num::NonZero<$ty>> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v: $ty = unsafe { transmute_checked(*self) };
+                    v.fmt(f)
+                }
+            }
+
+            impl core::fmt::Debug for MaybeValid<Option<core::num::NonZero<$ty>>> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v = unsafe { self.assume_valid() };
+                    v.fmt(f)
+                }
+            }
+            impl core::fmt::UpperHex for MaybeValid<$ty> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v = unsafe { self.assume_valid() };
+                    v.fmt(f)
+                }
+            }
+            impl core::fmt::UpperHex for MaybeValid<core::num::NonZero<$ty>> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v: $ty = unsafe { transmute_checked(*self) };
+                    v.fmt(f)
+                }
+            }
+
+            impl core::fmt::LowerHex for MaybeValid<$ty> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v = unsafe { self.assume_valid() };
+                    v.fmt(f)
+                }
+            }
+            impl core::fmt::LowerHex for MaybeValid<core::num::NonZero<$ty>> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v: $ty = unsafe { transmute_checked(*self) };
+                    v.fmt(f)
+                }
+            }
+
+            impl core::fmt::Octal for MaybeValid<$ty> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v = unsafe { self.assume_valid() };
+                    v.fmt(f)
+                }
+            }
+            impl core::fmt::Octal for MaybeValid<core::num::NonZero<$ty>> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v: $ty = unsafe { transmute_checked(*self) };
+                    v.fmt(f)
+                }
+            }
+
+            impl core::fmt::Binary for MaybeValid<$ty> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v = unsafe { self.assume_valid() };
+                    v.fmt(f)
+                }
+            }
+            impl core::fmt::Binary for MaybeValid<core::num::NonZero<$ty>> {
+                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    // SAFETY:
+                    // `$ty` is a primitive type and all uninit values are valid
+                    let v: $ty = unsafe { transmute_checked(*self) };
+                    v.fmt(f)
+                }
+            }
+        )*
+    }
+}
+
+impl_debug_int!(i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize);
+
+impl<T> core::fmt::Debug for MaybeValid<*const T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v = unsafe { self.assume_valid() };
+        v.fmt(f)
+    }
+}
+
+impl<T> core::fmt::Debug for MaybeValid<*mut T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v = unsafe { self.assume_valid() };
+        v.fmt(f)
+    }
+}
+
+impl<T> core::fmt::Debug for MaybeValid<NonNull<T>> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v: *const T = unsafe { transmute_checked(*self) };
+
+        v.fmt(f)
+    }
+}
+
+impl<T> core::fmt::Debug for MaybeValid<Option<NonNull<T>>> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v = unsafe { self.assume_valid() };
+        v.fmt(f)
+    }
+}
+
+impl<T> core::fmt::Pointer for MaybeValid<*const T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v = unsafe { self.assume_valid() };
+        v.fmt(f)
+    }
+}
+
+impl<T> core::fmt::Pointer for MaybeValid<*mut T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v = unsafe { self.assume_valid() };
+        v.fmt(f)
+    }
+}
+
+impl<T> core::fmt::Pointer for MaybeValid<NonNull<T>> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v: *const T = unsafe { transmute_checked(*self) };
+
+        v.fmt(f)
+    }
+}
+
+impl<'a, T> core::fmt::Pointer for MaybeValid<&'a T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v: *const T = unsafe { transmute_checked(*self) };
+
+        v.fmt(f)
+    }
+}
+
+impl<'a, T> core::fmt::Pointer for MaybeValid<&'a mut T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let v: *const T = unsafe { core::ptr::read((self as *const Self).cast::<*const T>()) };
+
+        v.fmt(f)
+    }
+}
+
+macro_rules! impl_fn_fmt_sig {
+    (for<$($param:ident),*> $fn_ty:ty) => {
+        impl<R, $($param),*> core::fmt::Debug for MaybeValid<$fn_ty> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                let v: *const () = unsafe{transmute_checked(*self)};
+
+                v.fmt(f)
+            }
+        }
+        impl<R, $($param),*> core::fmt::Pointer for MaybeValid<$fn_ty> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                let v: *const () = unsafe{transmute_checked(*self)};
+
+                v.fmt(f)
+            }
+        }
+        impl<R, $($param),*> core::fmt::Debug for MaybeValid<Option<$fn_ty>> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                let v = unsafe{self.assume_valid()};
+
+                v.fmt(f)
+            }
+        }
+    }
+}
+
+macro_rules! impl_fn_fmt {
+    ($($param:ident),*) => {
+        impl_fn_fmt_sig!(for<$($param),*> fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> unsafe fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> extern "C" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> unsafe extern "C" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> extern "system" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> unsafe extern "system" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> extern "C-unwind" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> unsafe extern "C-unwind" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> extern "system-unwind" fn($($param),*)->R);
+        impl_fn_fmt_sig!(for<$($param),*> unsafe extern "system-unwind" fn($($param),*)->R);
+    };
+}
+
+impl_fn_fmt!();
+impl_fn_fmt!(A);
+impl_fn_fmt!(A, B);
+impl_fn_fmt!(A, B, C);
+impl_fn_fmt!(A, B, C, D);
+impl_fn_fmt!(A, B, C, D, E);
+impl_fn_fmt!(A, B, C, D, E, F);
+impl_fn_fmt!(A, B, C, D, E, F, G);
+impl_fn_fmt!(A, B, C, D, E, F, G, H);
+impl_fn_fmt!(A, B, C, D, E, F, G, H, I);
+impl_fn_fmt!(A, B, C, D, E, F, G, H, I, J);
+impl_fn_fmt!(A, B, C, D, E, F, G, H, I, J, K);
+impl_fn_fmt!(A, B, C, D, E, F, G, H, I, J, K, L);
 
 /// Performs the same operation as [`transmute`][core::mem::transmute], but ignoring the size check.
 ///
