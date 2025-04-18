@@ -50,7 +50,6 @@ def_option! {
 }
 
 #[cfg(any(feature = "thread", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     /// Atomically checks that `ptr.read()&!ignore_mask == current.read()` and blocks the thread if it does, until a notification arrives.
     /// If the check fails, `current` is set to the loaded `ptr`.

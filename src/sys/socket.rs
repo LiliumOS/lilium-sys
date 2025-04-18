@@ -13,7 +13,6 @@ pub struct ServerHandle(Handle);
 pub struct sockaddr {}
 
 #[cfg(any(feature = "io", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn CreateServerSocket(servout: *mut HandlePtr<ServerHandle>) -> SysResult;
 

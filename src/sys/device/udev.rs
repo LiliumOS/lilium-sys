@@ -21,7 +21,6 @@ pub struct DeviceInvocationContext {
     pub ctx_handle: HandlePtr<InvokeContextHandle>,
 }
 
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub unsafe fn GetHandle(
         r: *mut HandlePtr<Handle>,

@@ -11,7 +11,6 @@ use super::{device::DeviceHandle, handle::HandlePtr, result::SysResult};
 pub const RANDOM_DEVICE: Uuid = parse_uuid("43c320fa-fe2e-3322-b80c-9a996bd8001c");
 
 #[cfg(any(feature = "io", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     /// Reads the specified random device for `len` bytes and fills `out` with that data.
     ///

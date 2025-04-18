@@ -39,7 +39,6 @@ pub struct PollInfo {
 }
 
 #[cfg(any(feature = "io", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
 
     /// Thread Local handle that is initialized to the standard input stream by the standard library

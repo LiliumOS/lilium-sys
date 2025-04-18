@@ -135,7 +135,6 @@ pub struct DeviceFunctionMarkers {
 }
 
 #[cfg(any(feature = "io", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
 
     /// Creates a new block device backed by `backing_hdl`, with the specified configuration.

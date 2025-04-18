@@ -237,7 +237,6 @@ def_option_type! {
 }
 
 #[cfg(any(feature = "process", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     /// Obtains a handle to the current process environment
     pub unsafe fn GetCurrentEnvironment(hdl: *mut HandlePtr<EnvironmentMapHandle>) -> SysResult;

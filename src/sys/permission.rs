@@ -22,7 +22,6 @@ pub union ThreadOwner {
 }
 
 #[cfg(feature = "base")]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn CreateSecurityContext(nctx: *mut HandlePtr<SecurityContext>) -> SysResult;
     pub fn CopySecurityContext(

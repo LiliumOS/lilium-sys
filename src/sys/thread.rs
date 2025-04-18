@@ -72,7 +72,6 @@ def_option_type! {
 }
 
 #[cfg(any(feature = "thread", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn StartThread(
         tsc: *const ThreadStartContext,

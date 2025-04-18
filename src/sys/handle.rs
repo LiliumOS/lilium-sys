@@ -27,6 +27,7 @@ use core::ffi::c_ulong;
 use super::{kstr::KStrCPtr, result::SysResult};
 
 /// An opaque type that represents any object referred to by a handle
+#[repr(C, align(32))]
 pub struct Handle(());
 
 /// A pointer that represents an opaque handle to an object.
@@ -146,7 +147,6 @@ pub const HANDLE_TYPE_ENVMAP: c_ulong = 7;
 pub const SHARE_FLAG_UPGRADE_PRIVILEGED: u32 = 1;
 
 #[cfg(feature = "base")]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     pub fn ShareHandle(
         shared_handle: *mut SharedHandlePtr,

@@ -58,7 +58,6 @@ pub const CLOCK_EPOCH: Uuid = parse_uuid("c8baabaf-b534-3fa1-929e-6177713e93f4")
 pub const CLOCK_MONOTONIC: Uuid = parse_uuid("df95f5b1-bbb7-3562-8c7a-6c3ce0a5dd95");
 
 #[cfg(any(feature = "io", doc))]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
     ///
     /// Reads the current offset from the epoch, as a Duration, of the specified Clock.

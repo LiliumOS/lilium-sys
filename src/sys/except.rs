@@ -84,7 +84,6 @@ pub const EXCEPT_HOOK_OK: isize = 2;
 pub const EXCEPT_HOOK_ABORT: isize = -1;
 
 #[cfg(feature = "base")]
-#[expect(improper_ctypes)]
 unsafe extern "system" {
 
     /// Aborts the calling thread by reporting  `except` as having been recieved but not handled
