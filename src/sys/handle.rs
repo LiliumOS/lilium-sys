@@ -87,6 +87,12 @@ impl<T> HandlePtr<T> {
     }
 }
 
+#[cfg(feature = "bytemuck")]
+unsafe impl<T> bytemuck::Zeroable for HandlePtr<T> {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: 'static> bytemuck::AnyBitPattern for HandlePtr<T> {}
+
 #[repr(transparent)]
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub struct SharedHandlePtr(*mut Handle);
@@ -99,6 +105,12 @@ impl core::fmt::Pointer for SharedHandlePtr {
 
 unsafe impl Send for SharedHandlePtr {}
 unsafe impl Sync for SharedHandlePtr {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::Zeroable for SharedHandlePtr {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::AnyBitPattern for SharedHandlePtr {}
 
 /// A Handle that is 16 bytes in size, regardless of the size of [`HandlePtr<T>`].
 /// The excess (padding) bytes must be initialized to `0`.
@@ -125,6 +137,9 @@ impl<T> Clone for WideHandle<T> {
 }
 
 impl<T> Copy for WideHandle<T> {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T> bytemuck::Zeroable for WideHandle<T> {}
 
 pub const HANDLE_TYPE_PROC: c_ulong = 1;
 pub const HANDLE_TYPE_THREAD: c_ulong = 2;
