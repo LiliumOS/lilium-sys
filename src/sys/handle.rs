@@ -24,6 +24,8 @@
 
 use core::ffi::c_ulong;
 
+use crate::uuid::Uuid;
+
 use super::{kstr::KStrCPtr, result::SysResult};
 
 /// An opaque type that represents any object referred to by a handle
@@ -140,6 +142,23 @@ impl<T> Copy for WideHandle<T> {}
 
 #[cfg(feature = "bytemuck")]
 unsafe impl<T> bytemuck::Zeroable for WideHandle<T> {}
+
+#[repr(C, align(16))]
+pub union HandleOrId<H> {
+    pub hdl: WideHandle<H>,
+    pub uuid: Uuid,
+}
+
+impl<T> Clone for HandleOrId<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for HandleOrId<T> {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T> bytemuck::Zeroable for HandleOrId<T> {}
 
 pub const HANDLE_TYPE_PROC: c_ulong = 1;
 pub const HANDLE_TYPE_THREAD: c_ulong = 2;

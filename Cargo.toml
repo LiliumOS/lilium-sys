@@ -21,6 +21,7 @@ bytemuck = { version = "1.14", features = [
 cfg-if = "1.0.0"
 sptr = { version = "0.3.2", optional = true }
 uuid = { version = "1.13.1", optional = true, default-features = false }
+lock_api = { version = "0.4.12", optional = true }
 
 [features]
 default = ["api", "core-subsys"]
@@ -44,3 +45,4 @@ debug = []
 kmgmt = []
 vti = []
 uuid-crate = ["dep:uuid"]
+sync-mutex = ["dep:lock_api"]

@@ -1,7 +1,8 @@
 use core::ffi::c_ulong;
 
 use super::{
-    handle::HandlePtr,
+    device::DeviceHandle,
+    handle::{HandleOrId, HandlePtr},
     kstr::{KCSlice, KSlice},
     process::EventJoinProcess,
     result::SysResult,
@@ -41,11 +42,21 @@ def_option_type! {
     }
 }
 
+def_option_type! {
+    pub struct EventSleepThreadUntil("6c222e98-9d03-5f9f-babb-563695db3f4c") {
+        pub sleep_epoch: Duration,
+        pub clock: HandleOrId<DeviceHandle>,
+    }
+}
+
 def_option! {
     pub union BlockingEvent(32) {
         pub await_addr: EventAwaitAddress,
         pub join_thread: EventJoinThread,
         pub join_process: EventJoinProcess,
+        pub sleep_thread: EventSleepThread,
+        #[cfg(feature = "io")]
+        pub sleep_thread_until: EventSleepThreadUntil,
     }
 }
 
@@ -113,8 +124,8 @@ unsafe extern "system" {
     ) -> SysResult;
 
     pub fn SetBlockingTimeout(dur: *const Duration) -> SysResult;
-    pub fn SleepThread(dur: *const Duration, options: KCSlice<ThreadBlockingOption>) -> SysResult;
-    pub safe fn PauseThread(options: KCSlice<ThreadBlockingOption>) -> SysResult;
+    pub fn SleepThread(dur: *mut Duration, options: KCSlice<ThreadBlockingOption>) -> SysResult;
+    pub unsafe fn PauseThread(options: KCSlice<ThreadBlockingOption>) -> SysResult;
     pub fn InterruptThread(th: HandlePtr<ThreadHandle>) -> SysResult;
     pub safe fn Interrupted() -> SysResult;
     pub safe fn ClearBlockingTimeout();

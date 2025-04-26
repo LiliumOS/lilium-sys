@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::{
     result::{Error, Result},
-    sys::{handle::HandlePtr, thread as sys},
+    sys::{handle::HandlePtr, kstr::KCSlice, thread as sys, time::Duration},
 };
 
 pub struct TlsKey<T>(isize, PhantomData<*mut T>);
@@ -66,9 +66,9 @@ impl<T> TlsKey<T> {
         get_tls_ptr_impl(self.0).cast()
     }
 
-    pub unsafe fn dealloc(self) { unsafe {
-        sys::tls_free_dyn(self.0)
-    }}
+    pub unsafe fn dealloc(self) {
+        unsafe { sys::tls_free_dyn(self.0) }
+    }
 }
 
 cfg_if::cfg_if! {
@@ -99,4 +99,57 @@ cfg_if::cfg_if! {
         }
     }
 
+}
+
+pub fn sleep(dur: impl Into<crate::time::Duration>) {
+    let dur: crate::time::Duration = dur.into();
+    let mut dur = dur.into_system();
+
+    while unsafe { crate::sys::event::SleepThread(&mut dur, KCSlice::empty()) } < 0 {}
+}
+
+#[cfg(feature = "io")]
+pub fn sleep_for<C: crate::time::Clock>(tp: impl Into<crate::time::TimePoint<C>>) {
+    use core::slice;
+
+    use crate::{
+        sys::{
+            error::INVALID_OPTION,
+            event::{BlockingEvent, EventSleepThreadUntil},
+            kstr::KSlice,
+        },
+        time::TimePoint,
+    };
+
+    let tp: crate::time::TimePoint<C> = tp.into();
+    let epoch = tp.since_epoch().into_system();
+
+    let clock = C::CLOCK_ID;
+    // SleepThreadUntil is only available via `BlockOnEvents*`.
+    let mut event = BlockingEvent {
+        sleep_thread_until: EventSleepThreadUntil {
+            sleep_epoch: epoch,
+            clock: crate::sys::handle::HandleOrId { uuid: clock },
+            ..EventSleepThreadUntil::NIL
+        },
+    };
+    loop {
+        let mut i = unsafe {
+            crate::sys::event::BlockOnEventsAll(
+                KSlice::from_slice_mut(slice::from_mut(&mut event)),
+                KCSlice::empty(),
+            )
+        };
+        if i >= 0 {
+            break;
+        }
+
+        if i == INVALID_OPTION {
+            // Kernel or the clock does not support `EventSleepThreadUntil`, fallback to sleep-on:
+            let now = TimePoint::<C>::now().expect("Bad Clock support");
+
+            let dur = tp.between(now);
+            break sleep(dur);
+        }
+    }
 }

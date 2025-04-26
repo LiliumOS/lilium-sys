@@ -187,25 +187,24 @@ impl From<std::time::SystemTime> for TimePoint<SystemClock> {
 }
 
 pub trait Clock {
-    fn clock_uuid() -> Uuid;
+    const CLOCK_ID: Uuid;
+    fn clock_uuid() -> Uuid {
+        Self::CLOCK_ID
+    }
 }
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct SystemClock;
 
 impl Clock for SystemClock {
-    fn clock_uuid() -> Uuid {
-        sys::CLOCK_EPOCH
-    }
+    const CLOCK_ID: Uuid = sys::CLOCK_EPOCH;
 }
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct MonotonicClock;
 
 impl Clock for MonotonicClock {
-    fn clock_uuid() -> Uuid {
-        sys::CLOCK_MONOTONIC
-    }
+    const CLOCK_ID: Uuid = sys::CLOCK_MONOTONIC;
 }
 
 impl<C> TimePoint<C> {
@@ -225,9 +224,10 @@ impl<C> TimePoint<C> {
         Duration(self.0)
     }
 
-    pub const fn between(self, other: Self) -> Duration {
+    ///
+    pub const fn between(self, prev: Self) -> Duration {
         let mut dur = self.0;
-        let other_dur = other.0;
+        let other_dur = prev.0;
 
         dur.seconds -= other_dur.seconds;
 

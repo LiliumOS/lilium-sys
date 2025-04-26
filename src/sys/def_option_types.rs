@@ -1,7 +1,7 @@
 use crate::uuid::Uuid;
 
 use super::{
-    handle::HandlePtr,
+    handle::{HandleOrId, HandlePtr, WideHandle},
     kstr::{KCSlice, KSlice, KStrCPtr, KStrPtr},
     option::ExtendedOptionHead,
     time::Duration,
@@ -32,6 +32,16 @@ impl EmptyVal for Duration {
 
 impl<T> EmptyVal for HandlePtr<T> {
     const EMPTY: Self = HandlePtr::null();
+}
+
+impl<H> EmptyVal for WideHandle<H> {
+    const EMPTY: Self = Self::NULL;
+}
+
+impl<H> EmptyVal for HandleOrId<H> {
+    const EMPTY: Self = HandleOrId {
+        hdl: WideHandle::NULL,
+    };
 }
 
 impl<T> EmptyVal for *mut T {
@@ -168,6 +178,7 @@ macro_rules! def_option {
             #[derive(Copy, Clone)]
             #[cfg_attr(feature = "bytemuck", derive(::bytemuck::AnyBitPattern))]
             $vis union $opt_ty {
+                $vis head: $crate::sys::option::ExtendedOptionHead,
                 $(#[$unknown_meta])* $vis unknown: [<$opt_ty Unknown>],
                 $($(#[$meta2])* $vis2 $field: $ty),*
             }

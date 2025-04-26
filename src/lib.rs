@@ -1,5 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(thread_local, never_type, non_exhaustive_omitted_patterns_lint)]
+#![feature(
+    thread_local,
+    never_type,
+    non_exhaustive_omitted_patterns_lint,
+    macro_metavar_expr,
+    macro_metavar_expr_concat
+)]
 #![cfg_attr(
     all(feature = "std", feature = "unstable-std-io_error_more"),
     feature(io_error_more, io_error_inprogress)
@@ -48,6 +54,9 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[doc(hidden)]
+pub use paste as _paste;
+
 pub mod sys;
 
 pub mod misc;
@@ -75,6 +84,9 @@ pub mod random;
 pub mod result;
 #[cfg(feature = "api")]
 pub mod security;
+
+#[cfg(all(feature = "api", feature = "thread"))]
+pub mod sync;
 
 #[cfg(feature = "api")]
 pub mod time;
