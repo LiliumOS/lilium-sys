@@ -7,4 +7,5 @@
 #[cfg_attr(feature = "vti", link(name = "usi-vti"))]
 #[cfg_attr(feature = "libc", link(name = "c"))]
 #[cfg_attr(feature = "rtld", link(name = "usi-rtld"))]
+#[cfg_attr(link(name = "usi-support"))]
 unsafe extern "C" {}
