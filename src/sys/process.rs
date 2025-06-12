@@ -380,7 +380,7 @@ unsafe extern "system" {
     pub fn ResizeMapping(
         mapping_base_addr: *mut c_void,
         old_page_count: c_long,
-        new_base_addr: *mut c_void,
+        new_base_addr: *mut *mut c_void,
         new_page_count: c_long,
     ) -> SysResult;
 

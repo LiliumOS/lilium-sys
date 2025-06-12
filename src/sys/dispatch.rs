@@ -21,7 +21,7 @@ unsafe extern "system" {
     ///
     /// ## Invalid System Calls
     /// Certain system calls cannot be invoked through this function:
-    /// * Blocking system calls - any blocking system call run through this function results in a `KERNEL_FUNCTION_WILL_BLOCK` error (note that this is the case even if the actually executed operation would block):
+    /// * Blocking system calls - any blocking system call run through this function results in a `KERNEL_FUNCTION_WILL_BLOCK` error (note that this is the case even if the actually executed operation would not block):
     ///   * Event based functions should use [`BlockOnEventsAny`][crate::sys::event::BlockOnEventsAny] or [`BlockOnEventsAll`][crate::sys::event::BlockOnEventsAll],
     ///   * IO routines must configured in [`MODE_NONBLOCKING`][crate::sys::io::MODE_NONBLOCKING] or [`MODE_ASYNC`][crate::sys::io::MODE_ASYNC] (even if the requested I/O operation is guaranteed not to block) to be dispatchable by this function
     /// * [`DispatchSystemFunctions`] itself cannot be invoked through this function, doing so returns `UNSUPPORTED_KERNEL_FUNCTION` for that system call.
