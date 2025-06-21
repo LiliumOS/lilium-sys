@@ -90,8 +90,11 @@ pub struct CreateProcessOptionArgs {
     /// The header of the option.
     pub header: ExtendedOptionHead,
     /// The List of Arguments to pass to the process
+    /// If not specified, the first argument is set from the input path string
     pub arguments: KCSlice<KStrCPtr>,
 }
+
+pub const CREATE_PROCESS_OPTION_ARGS: Uuid = parse_uuid("5b68c876-7320-5e9d-a6e6-8391f945587a");
 
 #[repr(C, align(32))]
 #[derive(Copy, Clone)]
@@ -105,6 +108,8 @@ pub union CreateProcessOption {
     pub init_handles: CreateProcessOptionInitHandles,
     /// Specifies the environment map
     pub env_map: CreateProcessOptionEnvironment,
+    /// Specifies the arguments
+    pub args: CreateProcessOptionArgs,
 }
 
 #[repr(transparent)]
