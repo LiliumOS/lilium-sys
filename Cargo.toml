@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 with_builtin_macros = "0.0.3"
-bitflags = "2.0.0-rc.1"
+bitflags = { version = "2.0.0-rc.1", optional = true }
 paste = "1.0.12"
 # hashbrown = { version = "0.14.0", optional = true }
 bytemuck = { version = "1.14", features = [
@@ -28,7 +28,7 @@ bytemuck = ["dep:bytemuck"]
 std = []
 unstable-std-io_error_more = []
 alloc = []
-api = ["dep:sptr", "alloc", "error-enum"]
+api = ["dep:sptr", "alloc", "error-enum", "dep:bitflags"]
 error-enum = []
 raw = []
 link-usi = []
@@ -45,3 +45,4 @@ kmgmt = []
 vti = []
 uuid-crate = ["dep:uuid"]
 sync-mutex = ["dep:lock_api"]
+once-lock = []
