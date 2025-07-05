@@ -49,4 +49,22 @@ uuid-crate = ["dep:uuid"]
 sync-mutex = ["dep:lock_api"]
 once-lock = []
 
-rustc_dep_of_std = ["dep:rustc-std-workspace-core"]
+__ra_all_features = [
+    "bytemuck",
+    "std",
+    "unstable-std-io_error_more",
+    "alloc",
+    "api",
+    "error-enum",
+    "error-num",
+    "raw",
+    "libc",
+    "rtld",
+    "core-subsys",
+    "vti",
+    "uuid-crate",
+    "sync-mutex",
+    "once-lock",
+]
+
+rustc-dep-of-std = ["dep:rustc-std-workspace-core"]

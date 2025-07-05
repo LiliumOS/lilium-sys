@@ -1,4 +1,5 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "rustc-dep-of-std", feature = "std", test)), no_std)]
+#![cfg_attr(feature = "rustc-dep-of-std", no_core)]
 #![feature(
     thread_local,
     never_type,
@@ -51,7 +52,7 @@
 //! * `unstable-std-io_error_more`: When the `std` feature is also enabled, enables conversion from [`crate::result::Error`] to [`std::io::Error`]
 //!
 
-#[cfg(feature = "rustc_dep_of_std")]
+#[cfg(feature = "rustc-dep-of-std")]
 extern crate rustc_std_workspace_core as core;
 
 #[cfg(feature = "alloc")]
