@@ -11,6 +11,7 @@
     all(feature = "std", feature = "unstable-std-io_error_more"),
     feature(io_error_more, io_error_inprogress)
 )]
+#![cfg_attr(feature = "rustc-dep-of-std", feature(no_core))]
 
 //! High and Low-level bindings to the Lilium kernel interfaces
 //!
