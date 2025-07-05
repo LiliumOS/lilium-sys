@@ -34,6 +34,8 @@ macro_rules! error_def{
 
     }
 }
+
+#[cfg(feature = "error-num")]
 with_builtin_macros::with_builtin! {
     let $file = include_from_root!("include/errors.h") in {
         error_def!{$file}

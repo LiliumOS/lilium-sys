@@ -54,9 +54,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[doc(hidden)]
-pub use paste as _paste;
-
 pub mod sys;
 
 pub mod misc;

@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-with_builtin_macros = "0.0.3"
+with_builtin_macros = { version = "0.0.3", optional = true }
 bitflags = { version = "2.0.0-rc.1", optional = true }
-paste = "1.0.12"
+paste = { version = "1.0.12", optional = true }
 # hashbrown = { version = "0.14.0", optional = true }
 bytemuck = { version = "1.14", features = [
     "derive",
@@ -23,14 +23,15 @@ uuid = { version = "1.13.1", optional = true, default-features = false }
 lock_api = { version = "0.4.12", optional = true }
 
 [features]
-default = ["api", "core-subsys"]
+default = ["api", "core-subsys", "error-num"]
 bytemuck = ["dep:bytemuck"]
 std = []
 unstable-std-io_error_more = []
 alloc = []
 api = ["dep:sptr", "alloc", "error-enum", "dep:bitflags"]
-error-enum = []
-raw = []
+error-enum = ["dep:paste", "error-num"]
+error-num = ["dep:with_builtin_macros"]
+raw = ["dep:with_builtin_macros"]
 link-usi = []
 
 libc = []

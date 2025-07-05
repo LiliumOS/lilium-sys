@@ -158,34 +158,32 @@ macro_rules! def_option {
             $($(#[$meta2:meta])* $vis2:vis $field:ident : $ty:ty),* $(,)?
         }
     } => {
-        ::paste::paste! {
-            $(#[$meta])*
-            #[repr(C, align(32))]
-            #[derive(Copy, Clone)]
-            $vis struct [<$opt_ty Unknown>] {
-                $vis head: $crate::sys::option::ExtendedOptionHead,
-                $vis payload: [::core::mem::MaybeUninit<u8>; $payload_size]
-            }
-
-            #[cfg(feature = "bytemuck")]
-            unsafe impl ::bytemuck::Zeroable for [<$opt_ty Unknown>]{}
-
-            #[cfg(feature = "bytemuck")]
-            unsafe impl ::bytemuck::AnyBitPattern for [<$opt_ty Unknown>]{}
-
-            $(#[$meta])*
-            #[repr(C, align(32))]
-            #[derive(Copy, Clone)]
-            #[cfg_attr(feature = "bytemuck", derive(::bytemuck::AnyBitPattern))]
-            $vis union $opt_ty {
-                $vis head: $crate::sys::option::ExtendedOptionHead,
-                $(#[$unknown_meta])* $vis unknown: [<$opt_ty Unknown>],
-                $($(#[$meta2])* $vis2 $field: $ty),*
-            }
-
-            const _: () = {
-                assert!(::core::mem::size_of::<$opt_ty>() == ::core::mem::size_of::<[<$opt_ty Unknown>]>())
-            };
+        $(#[$meta])*
+        #[repr(C, align(32))]
+        #[derive(Copy, Clone)]
+        $vis struct ${concat($opt_ty, Unknown)} {
+            $vis head: $crate::sys::option::ExtendedOptionHead,
+            $vis payload: [::core::mem::MaybeUninit<u8>; $payload_size]
         }
+
+        #[cfg(feature = "bytemuck")]
+        unsafe impl ::bytemuck::Zeroable for ${concat($opt_ty, Unknown)}{}
+
+        #[cfg(feature = "bytemuck")]
+        unsafe impl ::bytemuck::AnyBitPattern for ${concat($opt_ty, Unknown)}{}
+
+        $(#[$meta])*
+        #[repr(C, align(32))]
+        #[derive(Copy, Clone)]
+        #[cfg_attr(feature = "bytemuck", derive(::bytemuck::AnyBitPattern))]
+        $vis union $opt_ty {
+            $vis head: $crate::sys::option::ExtendedOptionHead,
+            $(#[$unknown_meta])* $vis unknown: ${concat($opt_ty, Unknown)},
+            $($(#[$meta2])* $vis2 $field: $ty),*
+        }
+
+        const _: () = {
+            assert!(::core::mem::size_of::<$opt_ty>() == ::core::mem::size_of::<${concat($opt_ty, Unknown)}>());
+        };
     };
 }

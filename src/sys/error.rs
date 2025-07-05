@@ -8,6 +8,7 @@ use super::{
     result::SysResult,
 };
 
+#[cfg(feature = "error-num")]
 pub use super::result::errors::*;
 
 #[repr(C, align(32))]
