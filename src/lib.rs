@@ -51,6 +51,9 @@
 //! * `unstable-std-io_error_more`: When the `std` feature is also enabled, enables conversion from [`crate::result::Error`] to [`std::io::Error`]
 //!
 
+#[cfg(feature = "rustc_dep_of_std")]
+extern crate rustc_std_workspace_core as core;
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
