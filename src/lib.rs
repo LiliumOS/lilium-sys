@@ -1,5 +1,4 @@
-#![cfg_attr(not(any(feature = "rustc-dep-of-std", feature = "std", test)), no_std)]
-#![cfg_attr(feature = "rustc-dep-of-std", no_core)]
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![feature(
     thread_local,
     never_type,
@@ -11,7 +10,6 @@
     all(feature = "std", feature = "unstable-std-io_error_more"),
     feature(io_error_more, io_error_inprogress)
 )]
-#![cfg_attr(feature = "rustc-dep-of-std", feature(no_core))]
 
 //! High and Low-level bindings to the Lilium kernel interfaces
 //!
@@ -52,9 +50,6 @@
 //! Features starting with `unstable` require nightly rust support and are exempt from semver guarantees:
 //! * `unstable-std-io_error_more`: When the `std` feature is also enabled, enables conversion from [`crate::result::Error`] to [`std::io::Error`]
 //!
-
-#[cfg(feature = "rustc-dep-of-std")]
-extern crate rustc_std_workspace_core as core;
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
