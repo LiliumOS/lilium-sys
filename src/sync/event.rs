@@ -188,54 +188,6 @@ unsafe impl<E: Event, const N: usize> EventList for [E; N] {
     }
 }
 
-macro_rules! impl_event_list_for_tuple{
-    ($($id:ident),*) => {
-        #[allow(non_snake_case)]
-        unsafe impl<$($id: Event),*> EventList for ($($id,)*) {
-            type AllResult = ($($id :: Val,)*);
-            type AnyResult = EventListResult<$($id :: Val),*>;
-            type EventArray = [BlockingEvent; ${count($id)}];
-
-            fn build_list(&mut self) -> Self::EventArray {
-                let ($($id,)*) = self;
-
-                [$($id . init()),*]
-            }
-
-            unsafe fn all_result(&mut self,#[allow(unused_variables)] v : &Self::EventArray) -> Self::AllResult {
-                let ($($id,)*) = self;
-
-                ($($id . get(&v[${index()}]),)*)
-            }
-
-            unsafe fn any_result(&mut self, #[allow(unused_variables)]  v: &Self::EventArray, n: usize) -> Self::AnyResult {
-                let ($($id,)*) = self;
-
-                match n {
-                    $(${index()} => {
-                        crate::_paste::paste!{EventListResult:: [<_ ${index()}>] ($id . get (&v[${index()}]))}
-                    })*
-                    _ => unsafe{core::hint::unreachable_unchecked()}
-                }
-            }
-        }
-    }
-}
-
-impl_event_list_for_tuple!();
-impl_event_list_for_tuple!(A);
-impl_event_list_for_tuple!(A, B);
-impl_event_list_for_tuple!(A, B, C);
-impl_event_list_for_tuple!(A, B, C, D);
-impl_event_list_for_tuple!(A, B, C, D, E);
-impl_event_list_for_tuple!(A, B, C, D, E, F);
-impl_event_list_for_tuple!(A, B, C, D, E, F, G);
-impl_event_list_for_tuple!(A, B, C, D, E, F, G, H);
-impl_event_list_for_tuple!(A, B, C, D, E, F, G, H, I);
-impl_event_list_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-impl_event_list_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-impl_event_list_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-
 pub struct SleepFor(pub crate::time::Duration);
 
 unsafe impl Event for SleepFor {

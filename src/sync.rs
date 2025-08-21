@@ -5,3 +5,6 @@ pub mod mutex;
 pub use mutex::{Mutex, RwLock};
 
 pub mod event;
+
+#[cfg(feature = "once-lock")]
+mod once;

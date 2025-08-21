@@ -53,7 +53,7 @@ impl<T> TlsKey<T> {
 
         Error::from_code(key)?;
 
-        Ok(Self(key, PhantomData))
+        Ok(Self(-key, PhantomData))
     }
     pub fn alloc() -> Self {
         match Self::try_alloc() {
